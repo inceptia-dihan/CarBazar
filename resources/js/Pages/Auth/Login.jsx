@@ -94,6 +94,17 @@ export default function Login({ status, canResetPassword }) {
                         Log in
                     </PrimaryButton>
                 </div>
+
+                <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+                    <span>Platform Administrator?</span>
+                    <Link
+                        href={route('admin.login')}
+                        className="text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1"
+                    >
+                        <span>Access Admin Console</span>
+                        <span aria-hidden="true">&rarr;</span>
+                    </Link>
+                </div>
             </form>
         </GuestLayout>
     );

@@ -18,8 +18,11 @@ export default function AuthenticatedLayout({ header, children }) {
                     <div className="flex h-16 justify-between">
                         <div className="flex">
                             <div className="flex shrink-0 items-center">
-                                <Link href="/">
-                                    <ApplicationLogo className="block h-9 w-auto fill-current text-gray-800" />
+                                <Link href="/" className="flex items-center gap-2">
+                                    <div className="w-8 h-8 bg-[#1877F2] rounded-lg flex items-center justify-center text-white shadow-sm">
+                                        <ApplicationLogo className="w-5 h-5 fill-current text-white" />
+                                    </div>
+                                    <span className="text-[#1877F2] font-black text-[19px] tracking-tight">CarBazar</span>
                                 </Link>
                             </div>
 

@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import { getCarBySlug, CARS_DATA, DEFAULT_CAR_SLUG } from '@/data/carsData';
 
-export default function CarDetails({ auth, slug }) {
+export default function CarDetails({ auth, slug, car: dbCar, recommendedCars = [] }) {
     const currentSlug = slug || DEFAULT_CAR_SLUG;
-    const car = getCarBySlug(currentSlug);
+    const fallbackCar = getCarBySlug(currentSlug);
+    const car = dbCar || fallbackCar;
 
     const [activePhotoIndex, setActivePhotoIndex] = useState(0);
     const [isWishlisted, setIsWishlisted] = useState(false);
@@ -18,9 +19,20 @@ export default function CarDetails({ auth, slug }) {
         setIsWishlisted(false);
     }, [currentSlug]);
 
-    const photos = car.photos && car.photos.length > 0 ? car.photos : [
-        { src: car.mainImage, thumb: car.mainImage, title: car.name }
-    ];
+    const mainImg = car?.mainImage || car?.main_image || car?.image || '/images/hero-car.jpg';
+    const rawPhotos = car?.photos && Array.isArray(car.photos) && car.photos.length > 0 ? car.photos : [];
+    const photos = rawPhotos.length > 0
+        ? rawPhotos.map((p, idx) => {
+            if (typeof p === 'string') {
+                return { src: p, thumb: p, title: `${car?.name || 'Car'} - Photo ${idx + 1}` };
+            }
+            return {
+                src: p.src || p.thumb || mainImg,
+                thumb: p.thumb || p.src || mainImg,
+                title: p.title || `${car?.name || 'Car'} - Photo ${idx + 1}`,
+            };
+        })
+        : [{ src: mainImg, thumb: mainImg, title: car?.name || 'Car Photo' }];
 
     const handleShare = () => {
         if (navigator.clipboard) {
@@ -149,8 +161,67 @@ export default function CarDetails({ auth, slug }) {
         );
     };
 
-    // Filter other cars for similar/recommended section
-    const otherCars = Object.values(CARS_DATA).filter((c) => c.slug !== car.slug);
+    if (!car) {
+        return (
+            <div className="min-h-screen bg-[#F0F4F8] flex flex-col items-center justify-center p-6 text-center">
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">Car Not Found</h1>
+                <p className="text-gray-500 mb-6">The vehicle listing you are looking for may have been sold or removed.</p>
+                <Link href="/" className="bg-[#1877F2] text-white px-6 py-2.5 rounded-xl font-bold">
+                    Return to Home
+                </Link>
+            </div>
+        );
+    }
+
+    // Key specifications normalization
+    const keySpecifications = Array.isArray(car.keySpecifications)
+        ? car.keySpecifications
+        : (Array.isArray(car.key_specifications) ? car.key_specifications : []);
+
+    const mileageVal = keySpecifications.find((s) => s.label?.toLowerCase() === 'mileage')?.value || '20,000 km';
+    const fuelVal = keySpecifications.find((s) => s.label?.toLowerCase() === 'fuel type' || s.label?.toLowerCase() === 'fuel')?.value || 'Octane';
+
+    // Highlights normalization
+    const highlights = Array.isArray(car.highlights) ? car.highlights : [];
+
+    // Equipment list normalization (supports both grouped and flat array of strings)
+    const normalizedEquipment = useMemo(() => {
+        const list = car.equipmentList || car.equipment_list || [];
+        if (!Array.isArray(list) || list.length === 0) return [];
+
+        if (typeof list[0] === 'object' && list[0] !== null && Array.isArray(list[0].items)) {
+            return list;
+        }
+
+        const stringItems = list.map((item) => (typeof item === 'string' ? item : (item.name || item.title || String(item))));
+        return [
+            {
+                category: 'Features & Installed Options',
+                items: stringItems,
+            },
+        ];
+    }, [car]);
+
+    // Seller normalization
+    const rawSeller = car.seller || {};
+    const sellerName = rawSeller.name || 'Verified Seller';
+    const sellerRole = rawSeller.role || (car.user_id ? 'Verified Car Owner' : 'Verified Premier Dealer');
+    const sellerLocation = rawSeller.location || car.location || 'Dhaka, Bangladesh';
+    const sellerRating = rawSeller.rating || '5.0';
+    const sellerReviewsCount = rawSeller.reviewsCount || rawSeller.reviews || '1';
+    const sellerMemberSince = (rawSeller.memberSince || '2024').replace(/^Member since\s*/i, '');
+    const sellerPhone = rawSeller.phone || '+880 1711-000000';
+    const sellerInitials = sellerName.trim().substring(0, 2).toUpperCase() || 'CB';
+    const rawCleanPhone = sellerPhone.replace(/[^0-9]/g, '');
+
+    // Price formatting
+    const askingPrice = car.askingPrice || car.asking_price || (car.priceLakh ? `${car.priceLakh} Tk` : (car.price ? `৳ ${car.price}` : '৳ 35,00,000'));
+    const priceLakh = car.priceLakh || car.price_lakh || '35 Lakh Tk';
+
+    // Recommended / Similar cars
+    const displayRecommendations = Array.isArray(recommendedCars) && recommendedCars.length > 0
+        ? recommendedCars
+        : Object.values(CARS_DATA).filter((c) => c.slug !== car.slug).slice(0, 4);
 
     return (
         <>
@@ -174,17 +245,28 @@ export default function CarDetails({ auth, slug }) {
                         <nav className="hidden lg:flex items-center gap-8 text-[14px] font-semibold text-gray-700">
                             <Link href="/" className="hover:text-[#1877F2] transition-colors">Buy</Link>
                             <Link href="/" className="hover:text-[#1877F2] transition-colors">Sell</Link>
-                            <Link href="/" className="hover:text-[#1877F2] transition-colors">Rental deals</Link>
-                            <Link href="/" className="hover:text-[#1877F2] transition-colors">How it works</Link>
-                            <Link href="/" className="hover:text-[#1877F2] transition-colors">Why choose us</Link>
+                            <Link href="/#impressive-collection-section" className="hover:text-[#1877F2] transition-colors">Hot Deals</Link>
+                            <Link href="/#how-it-works-section" className="hover:text-[#1877F2] transition-colors">How it works</Link>
+                            <Link href="/#why-choose-us-section" className="hover:text-[#1877F2] transition-colors">Why choose us</Link>
                         </nav>
 
                         {/* Auth Buttons */}
                         <div className="flex items-center gap-4 text-[14px] font-semibold">
                             {auth?.user ? (
-                                <Link href={route('dashboard')} className="text-gray-800 hover:text-[#1877F2] transition-colors">
-                                    Dashboard
-                                </Link>
+                                <div className="flex items-center gap-3">
+                                    {auth.user.is_admin && (
+                                        <Link
+                                            href={route('admin.dashboard')}
+                                            className="px-3 py-1.5 rounded-lg bg-slate-900 text-blue-400 hover:text-blue-300 text-xs font-bold border border-slate-700 transition-colors flex items-center gap-1.5 shadow-sm"
+                                        >
+                                            <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+                                            Admin Panel
+                                        </Link>
+                                    )}
+                                    <Link href={route('dashboard')} className="text-gray-800 hover:text-[#1877F2] transition-colors">
+                                        {auth.user.is_admin ? 'Seller View' : 'Dashboard'}
+                                    </Link>
+                                </div>
                             ) : (
                                 <>
                                     <Link href={route('login')} className="text-gray-800 hover:text-[#1877F2] transition-colors">
@@ -252,17 +334,17 @@ export default function CarDetails({ auth, slug }) {
                     {/* Top Car Title Bar */}
                     <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                         <div>
-                            <div className="flex items-center gap-2 mb-1.5">
+                            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                                 <span className="bg-[#EBF3FE] text-[#1877F2] font-bold text-[11px] px-2.5 py-0.5 rounded-md tracking-wide uppercase">
-                                    {car.brand}
+                                    {car.brand || 'Vehicle'}
                                 </span>
                                 <span className="bg-emerald-50 text-emerald-700 font-bold text-[11px] px-2.5 py-0.5 rounded-md flex items-center gap-1">
                                     <svg className="w-3.5 h-3.5 fill-emerald-600" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                     </svg>
-                                    {car.tag || 'Verified Listing'}
+                                    {car.tag || (car.user_id ? 'Verified Owner Listing' : 'Verified Listing')}
                                 </span>
-                                <span className="text-gray-400 text-xs">• {car.views} views • Published {car.publishedDate}</span>
+                                <span className="text-gray-400 text-xs">• {car.views || 1} views • Published {car.publishedDate || car.published_date || 'Recently'}</span>
                             </div>
                             <h1 className="text-2xl sm:text-3xl lg:text-[32px] font-black text-gray-900 tracking-tight">
                                 {car.name}
@@ -272,7 +354,7 @@ export default function CarDetails({ auth, slug }) {
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
                                 </svg>
-                                <span>{car.location}</span>
+                                <span>{car.location || 'Dhaka, Bangladesh'}</span>
                             </div>
                         </div>
 
@@ -281,11 +363,11 @@ export default function CarDetails({ auth, slug }) {
                             <div>
                                 <span className="text-xs text-gray-400 block font-medium">Asking Price</span>
                                 <div className="text-2xl font-black text-[#1877F2]">
-                                    {car.askingPrice}
+                                    {askingPrice}
                                 </div>
                             </div>
                             <span className="text-xs bg-blue-50 text-[#1877F2] font-bold px-3 py-1 rounded-full">
-                                {car.priceLakh}
+                                {priceLakh}
                             </span>
                         </div>
                     </div>
@@ -375,13 +457,13 @@ export default function CarDetails({ auth, slug }) {
                                 </div>
 
                                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-                                    {car.keySpecifications.map((spec, i) => (
+                                    {keySpecifications.map((spec, i) => (
                                         <div
                                             key={i}
                                             className="bg-[#F8FAFC] hover:bg-[#EEF4FF] rounded-2xl p-3.5 border border-gray-100 transition-colors flex items-center gap-3 group"
                                         >
                                             <div className="w-10 h-10 rounded-xl bg-white text-[#1877F2] group-hover:bg-[#1877F2] group-hover:text-white flex items-center justify-center shrink-0 shadow-sm transition-colors">
-                                                {getSpecIcon(spec.label)}
+                                                {getSpecIcon(spec.label || '')}
                                             </div>
                                             <div className="min-w-0">
                                                 <div className="text-[11px] font-bold uppercase tracking-wider text-gray-400 truncate leading-none mb-1">
@@ -405,23 +487,23 @@ export default function CarDetails({ auth, slug }) {
 
                                 <div className="bg-blue-50/60 rounded-2xl p-4 border border-blue-100 mb-5">
                                     <h3 className="text-[15px] font-bold text-[#1877F2] mb-1">
-                                        {car.headline}
+                                        {car.headline || `${car.name} in Excellent Running Condition`}
                                     </h3>
-                                    <p className="text-xs text-gray-600 leading-relaxed">
-                                        {car.description}
+                                    <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-line">
+                                        {car.description || `Verified ${car.name} available for inspection and test drive in ${car.location || 'Dhaka, Bangladesh'}.`}
                                     </p>
                                 </div>
 
                                 {/* Clean Highlights with professional SVG icon containers (No Emojis) */}
                                 <div className="space-y-4 text-sm text-gray-700 leading-relaxed">
-                                    {car.highlights.map((h, i) => (
+                                    {highlights.map((h, i) => (
                                         <div key={i} className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-gray-50/80 transition-colors">
                                             <div className="w-8 h-8 rounded-xl bg-[#EBF3FE] text-[#1877F2] flex items-center justify-center shrink-0 shadow-xs mt-0.5">
                                                 {getHighlightIcon(h.type, i)}
                                             </div>
                                             <div className="flex-1">
                                                 <strong className="text-gray-900 font-bold block sm:inline mr-1.5">{h.title}:</strong>
-                                                <span className="text-gray-600 text-xs sm:text-sm">{h.text}</span>
+                                                <span className="text-gray-600 text-xs sm:text-sm">{h.desc || h.text}</span>
                                             </div>
                                         </div>
                                     ))}
@@ -436,14 +518,14 @@ export default function CarDetails({ auth, slug }) {
                                 </div>
 
                                 <div className="space-y-6">
-                                    {car.equipmentList.map((section, idx) => (
+                                    {normalizedEquipment.map((section, idx) => (
                                         <div key={idx} className="border-b border-gray-100 last:border-0 pb-6 last:pb-0">
                                             <h3 className="text-xs font-bold uppercase tracking-wider mb-3 text-gray-400 flex items-center gap-2">
                                                 <span className="w-1.5 h-1.5 rounded-full bg-[#1877F2]"></span>
                                                 {section.category}
                                             </h3>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
-                                                {section.items.map((item, itemIdx) => (
+                                                {Array.isArray(section.items) && section.items.map((item, itemIdx) => (
                                                     <div key={itemIdx} className="flex items-center gap-2.5 text-xs font-medium text-gray-700 bg-gray-50/80 hover:bg-blue-50/60 px-3 py-2.5 rounded-xl border border-gray-100/80 transition-colors">
                                                         <div className="w-4 h-4 rounded-full bg-[#EBF3FE] text-[#1877F2] flex items-center justify-center shrink-0">
                                                             <svg className="w-2.5 h-2.5 stroke-[3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -477,12 +559,12 @@ export default function CarDetails({ auth, slug }) {
 
                                 <div className="flex items-baseline gap-2 mb-4">
                                     <span className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight">
-                                        {car.askingPrice}
+                                        {askingPrice}
                                     </span>
                                 </div>
 
                                 <div className="text-xs text-gray-500 font-medium mb-5 pb-5 border-b border-gray-100 flex items-center justify-between">
-                                    <span>Equivalent to: <strong>{car.priceLakh}</strong></span>
+                                    <span>Equivalent to: <strong>{priceLakh}</strong></span>
                                     <span className="text-emerald-600 font-bold flex items-center gap-1">
                                         <svg className="w-3.5 h-3.5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
                                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -498,28 +580,28 @@ export default function CarDetails({ auth, slug }) {
                                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5" /></svg>
                                             Year
                                         </div>
-                                        {car.year}
+                                        {car.year || '2023'}
                                     </div>
                                     <div className="bg-gray-50 p-2.5 rounded-xl text-center flex flex-col items-center justify-center">
                                         <div className="flex items-center gap-1 text-gray-400 text-[10px] mb-0.5">
                                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z" /></svg>
                                             Mileage
                                         </div>
-                                        {car.keySpecifications.find(s => s.label === 'Mileage')?.value || '20,000 km'}
+                                        {mileageVal}
                                     </div>
                                     <div className="bg-gray-50 p-2.5 rounded-xl text-center flex flex-col items-center justify-center">
                                         <div className="flex items-center gap-1 text-gray-400 text-[10px] mb-0.5">
                                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 8a2 2 0 012-2h8a2 2 0 012 2v12H3V8zm12 3h2a2 2 0 012 2v5a2 2 0 002 2" /></svg>
                                             Fuel
                                         </div>
-                                        {car.keySpecifications.find(s => s.label === 'Fuel Type')?.value || 'Octane'}
+                                        {fuelVal}
                                     </div>
                                     <div className="bg-gray-50 p-2.5 rounded-xl text-center flex flex-col items-center justify-center">
                                         <div className="flex items-center gap-1 text-gray-400 text-[10px] mb-0.5">
                                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4" /></svg>
                                             Transmission
                                         </div>
-                                        {car.type || 'Auto'}
+                                        {car.type || car.transmission || 'Auto'}
                                     </div>
                                 </div>
 
@@ -527,18 +609,18 @@ export default function CarDetails({ auth, slug }) {
                                 <div className="bg-[#F8FAFC] rounded-2xl p-4 border border-gray-100 mb-5">
                                     <div className="flex items-center gap-3 mb-3">
                                         <div className="w-12 h-12 rounded-full bg-[#1877F2] text-white font-black text-lg flex items-center justify-center shadow-md">
-                                            {car.seller.name.substring(0, 2).toUpperCase()}
+                                            {sellerInitials}
                                         </div>
                                         <div className="min-w-0 flex-1">
                                             <div className="flex items-center gap-1.5">
                                                 <h4 className="font-bold text-gray-900 text-[15px] truncate">
-                                                    {car.seller.name}
+                                                    {sellerName}
                                                 </h4>
                                                 <svg className="w-4 h-4 text-[#1877F2] shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                                 </svg>
                                             </div>
-                                            <p className="text-xs text-gray-500">{car.seller.role} • {car.seller.location}</p>
+                                            <p className="text-xs text-gray-500">{sellerRole} • {sellerLocation}</p>
                                         </div>
                                     </div>
 
@@ -547,9 +629,9 @@ export default function CarDetails({ auth, slug }) {
                                             <svg className="w-3.5 h-3.5 fill-current text-yellow-400" viewBox="0 0 20 20">
                                                 <path d="M10 1l2.39 4.84 5.34.78-3.87 3.77.91 5.32L10 13.27l-4.77 2.51.91-5.32L2.27 6.62l5.34-.78z" />
                                             </svg>
-                                            {car.seller.rating} <span className="text-gray-400 font-normal">({car.seller.reviewsCount} reviews)</span>
+                                            {sellerRating} <span className="text-gray-400 font-normal">({sellerReviewsCount} reviews)</span>
                                         </span>
-                                        <span className="text-gray-400">Member since {car.seller.memberSince}</span>
+                                        <span className="text-gray-400">Member since {sellerMemberSince}</span>
                                     </div>
                                 </div>
 
@@ -564,12 +646,12 @@ export default function CarDetails({ auth, slug }) {
                                         <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
                                         </svg>
-                                        <span>{showPhone ? car.seller.phone : 'Call the seller'}</span>
+                                        <span>{showPhone ? sellerPhone : 'Call the seller'}</span>
                                     </button>
 
                                     {/* Connect on WhatsApp */}
                                     <a
-                                        href={`https://wa.me/${car.seller.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello, I am interested in the ${car.name} on CarBazar`)}`}
+                                        href={`https://wa.me/${rawCleanPhone}?text=${encodeURIComponent(`Hello, I am interested in the ${car.name} on CarBazar`)}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="w-full bg-[#25D366] hover:bg-[#1ebc57] text-white py-3.5 px-4 rounded-xl font-bold text-[14px] flex items-center justify-center gap-2.5 transition-all shadow-md active:scale-95"
@@ -644,55 +726,64 @@ export default function CarDetails({ auth, slug }) {
 
                         {/* Cars Grid Matching CarBazar Home Page Cards */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-                            {otherCars.slice(0, 4).map((otherCar) => (
-                                <div
-                                    key={otherCar.slug}
-                                    className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.12)] border border-gray-100 p-4 flex flex-col transition-all duration-200 group"
-                                >
-                                    <div className="h-[130px] mb-3 flex items-center justify-center relative overflow-hidden rounded-xl bg-gray-50">
-                                        <img
-                                            src={otherCar.mainImage}
-                                            alt={otherCar.name}
-                                            className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
-                                        />
-                                        <span className="absolute top-2 left-2 text-[10px] font-bold bg-[#EBF3FE] text-[#1877F2] px-2 py-0.5 rounded-md">
-                                            {otherCar.tag}
-                                        </span>
-                                    </div>
+                            {displayRecommendations.slice(0, 4).map((otherCar) => {
+                                const oImg = otherCar.mainImage || otherCar.main_image || otherCar.image || '/images/hero-car.jpg';
+                                const oPrice = otherCar.askingPrice || otherCar.asking_price || (otherCar.priceLakh ? `${otherCar.priceLakh} Tk` : (otherCar.price_lakh ? `${otherCar.price_lakh} Tk` : (otherCar.price ? `৳ ${otherCar.price}` : '৳ 35 Lakh Tk')));
+                                const oTag = otherCar.tag || (otherCar.user_id ? 'Verified Owner' : 'Verified');
+                                const oType = otherCar.type || otherCar.transmission || 'Auto';
+                                const oYear = otherCar.year || '2023';
+                                const oLoc = otherCar.location || 'Dhaka, Bangladesh';
 
-                                    <h3 className="font-bold text-gray-900 text-[14px] mb-1 truncate">
-                                        {otherCar.name}
-                                    </h3>
-                                    <p className="text-[11px] text-gray-400 mb-2 truncate">
-                                        {otherCar.location}
-                                    </p>
-
-                                    {/* Features Chips */}
-                                    <div className="flex items-center gap-2 text-[10px] text-gray-500 font-medium mb-3">
-                                        <span className="bg-gray-100 px-2 py-0.5 rounded">{otherCar.year}</span>
-                                        <span className="bg-gray-100 px-2 py-0.5 rounded">{otherCar.brand}</span>
-                                        <span className="bg-gray-100 px-2 py-0.5 rounded">{otherCar.type}</span>
-                                    </div>
-
-                                    <div className="border-t border-gray-100 my-2"></div>
-
-                                    <div className="flex items-center justify-between mb-3">
-                                        <span className="text-gray-400 text-[11px] font-medium">Price</span>
-                                        <div className="font-bold text-[14px] text-gray-900">
-                                            {otherCar.askingPrice}
-                                        </div>
-                                    </div>
-
-                                    {/* View Details Button with Blue Hover Effect */}
-                                    <Link
-                                        href={`/car/${otherCar.slug}`}
-                                        className="w-full py-2.5 rounded-xl border border-[#1877F2] text-[#1877F2] bg-white hover:bg-[#1877F2] hover:text-white hover:border-[#1877F2] hover:shadow-md hover:shadow-blue-500/20 font-bold text-[12px] flex items-center justify-center gap-1.5 transition-all duration-200 group/btn"
+                                return (
+                                    <div
+                                        key={otherCar.id || otherCar.slug}
+                                        className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.12)] border border-gray-100 p-4 flex flex-col transition-all duration-200 group"
                                     >
-                                        <span>View Details</span>
-                                        <span className="text-base leading-none group-hover/btn:translate-x-1 transition-transform">→</span>
-                                    </Link>
-                                </div>
-                            ))}
+                                        <div className="h-[130px] mb-3 flex items-center justify-center relative overflow-hidden rounded-xl bg-gray-50">
+                                            <img
+                                                src={oImg}
+                                                alt={otherCar.name}
+                                                className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
+                                            />
+                                            <span className="absolute top-2 left-2 text-[10px] font-bold bg-[#EBF3FE] text-[#1877F2] px-2 py-0.5 rounded-md">
+                                                {oTag}
+                                            </span>
+                                        </div>
+
+                                        <h3 className="font-bold text-gray-900 text-[14px] mb-1 truncate" title={otherCar.name}>
+                                            {otherCar.name}
+                                        </h3>
+                                        <p className="text-[11px] text-gray-400 mb-2 truncate">
+                                            {oLoc}
+                                        </p>
+
+                                        {/* Features Chips */}
+                                        <div className="flex items-center gap-2 text-[10px] text-gray-500 font-medium mb-3">
+                                            <span className="bg-gray-100 px-2 py-0.5 rounded">{oYear}</span>
+                                            <span className="bg-gray-100 px-2 py-0.5 rounded">{otherCar.brand}</span>
+                                            <span className="bg-gray-100 px-2 py-0.5 rounded">{oType}</span>
+                                        </div>
+
+                                        <div className="border-t border-gray-100 my-2"></div>
+
+                                        <div className="flex items-center justify-between mb-3">
+                                            <span className="text-gray-400 text-[11px] font-medium">Price</span>
+                                            <div className="font-bold text-[14px] text-gray-900">
+                                                {oPrice}
+                                            </div>
+                                        </div>
+
+                                        {/* View Details Button with Blue Hover Effect */}
+                                        <Link
+                                            href={`/car/${otherCar.slug}`}
+                                            className="w-full py-2.5 rounded-xl border border-[#1877F2] text-[#1877F2] bg-white hover:bg-[#1877F2] hover:text-white hover:border-[#1877F2] hover:shadow-md hover:shadow-blue-500/20 font-bold text-[12px] flex items-center justify-center gap-1.5 transition-all duration-200 group/btn"
+                                        >
+                                            <span>View Details</span>
+                                            <span className="text-base leading-none group-hover/btn:translate-x-1 transition-transform">→</span>
+                                        </Link>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </section>
 
