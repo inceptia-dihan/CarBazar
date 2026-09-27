@@ -31,6 +31,33 @@ class CarController extends Controller
     }
 
     /**
+     * Display the dedicated cars collection page.
+     */
+    public function cars(Request $request): Response
+    {
+        $cars = Car::latest()->get();
+        $popularBrands = Brand::where('popular', true)->with('models')->get();
+
+        return Inertia::render('Cars', [
+            'collectionCars' => $cars,
+            'popularBrands' => $popularBrands,
+            'initialFilters' => [
+                'brand' => $request->query('brand', ''),
+                'model' => $request->query('model', ''),
+                'category' => $request->query('category', 'all'),
+                'bodyType' => $request->query('bodyType', ''),
+                'minPrice' => $request->query('minPrice', null),
+                'maxPrice' => $request->query('maxPrice', null),
+                'condition' => $request->query('condition', 'all'),
+            ],
+            'canLogin' => Route::has('login'),
+            'canRegister' => Route::has('register'),
+            'laravelVersion' => Application::VERSION,
+            'phpVersion' => PHP_VERSION,
+        ]);
+    }
+
+    /**
      * Display a single car details page.
      */
     public function show(?string $slug = null): Response

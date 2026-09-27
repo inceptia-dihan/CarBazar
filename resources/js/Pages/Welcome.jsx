@@ -122,12 +122,65 @@ const Stars = ({ count = 5 }) => (
     </div>
 );
 
+// ─── Slug to Full Selling Price Mapping (matching CarDetails page) ────────────
+const slugSellingPrices = {
+    'toyota-corolla-cross-hybrid-2021': '৳ 37,00,000',
+    'jaguar-xe-l-p250': '৳ 48,00,000',
+    'audi-r8': '৳ 1,85,00,000',
+    'bmw-m3': '৳ 1,35,00,000',
+    'lamborghini-huracan': '৳ 2,90,00,000',
+    '2023-lexus-es-350-9mkwd': '৳ 1,845,000',
+    'volvo-xc90-recharge-2023': '৳ 95,00,000',
+    'jeep-wrangler-rubicon-392-2023': '৳ 88,00,000',
+    'ferrari-dino-246-gt-classic': '৳ 3,50,00,000',
+    'chevrolet-corvette-stingray-2023': '৳ 1,45,00,000',
+    'volkswagen-golf-gti-2023': '৳ 55,00,000',
+    'honda-civic-type-r-2023': '৳ 78,00,000',
+    'nissan-gt-r-nismo-2022': '৳ 1,75,00,000',
+    'mercedes-benz-s500-limousine-2023': '৳ 2,40,00,000',
+    'hyundai-tucson-hybrid-2023': '৳ 42,00,000',
+    'kia-sportage-x-line-2023': '৳ 44,00,000',
+    'ford-mustang-gt-convertible-2023': '৳ 95,00,000',
+    'tesla-model-3-performance-2023': '৳ 82,00,000',
+    'audi-rs6-avant-performance-2023': '৳ 1,90,00,000',
+};
+
+const getDisplaySellingPrice = (carItem = {}, slugKey = '') => {
+    // 1. Explicit askingPrice
+    const ask = carItem.askingPrice || carItem.asking_price;
+    if (ask && typeof ask === 'string' && ask.trim()) {
+        const trimmed = ask.trim();
+        return trimmed.startsWith('৳') ? trimmed : `৳ ${trimmed}`;
+    }
+
+    // 2. Known slug map matching CarDetails
+    const targetSlug = slugKey || carItem.slug;
+    if (targetSlug && slugSellingPrices[targetSlug]) {
+        return slugSellingPrices[targetSlug];
+    }
+
+    // 3. Price Lakh format
+    const lakh = carItem.priceLakh || carItem.price_lakh;
+    if (lakh) {
+        return lakh.startsWith('৳') ? lakh : `৳ ${lakh}`;
+    }
+
+    // 4. Numerical price if > 50,000 (selling price in Taka)
+    if (carItem.price) {
+        const numOnly = Number(String(carItem.price).replace(/[^0-9]/g, ''));
+        if (numOnly > 50000) {
+            return `৳ ${numOnly.toLocaleString('en-IN')}`;
+        }
+    }
+
+    return '৳ 35,00,000';
+};
+
 // ─── Car Card for Collection ──────────────────────────────────────────────────
-const CarCard = ({ image, mainImage, main_image, name, slug = 'toyota-corolla-cross-hybrid-2021', price, priceLakh, price_lakh, askingPrice, asking_price, dailyPrice, daily_price, rating, reviews, passengers, doors, user_id }) => {
+const CarCard = (props) => {
+    const { image, mainImage, main_image, name, slug = 'toyota-corolla-cross-hybrid-2021', rating, reviews, passengers, doors, user_id } = props;
     const cardImg = image || mainImage || main_image || '/images/hero-car.jpg';
-    const lakhVal = priceLakh || price_lakh;
-    const askVal = askingPrice || asking_price;
-    const formattedPrice = askVal || (lakhVal ? `${lakhVal}` : null) || (price ? `৳ ${price}` : '৳ 35,00,000');
+    const formattedPrice = getDisplaySellingPrice(props, slug);
     const isNewAd = Boolean(user_id);
 
     return (
@@ -200,24 +253,25 @@ export default function Welcome({ auth, collectionCars: dbCollectionCars, popula
     ];
 
     const defaultCollectionCars = [
-        { image: '/images/corolla-cross-1.jpg', name: 'Toyota Corolla Cross Hybrid', slug: 'toyota-corolla-cross-hybrid-2021', brand: 'Toyota', bodyType: 'SUV', price: '2,500', rating: '4.9', reviews: '2,436', passengers: 5, doors: 4, category: 'popular,family' },
-        { image: '/images/hero-car.jpg', name: 'Jaguar XE L P250', slug: 'jaguar-xe-l-p250', brand: 'Jaguar', bodyType: 'Sedan', price: '1,800', rating: '4.8', reviews: '2,436', passengers: 4, doors: 4, category: 'luxury,popular' },
-        { image: '/images/audi-car.jpg', name: 'Audi R8 Performance', slug: 'audi-r8', brand: 'Audi', bodyType: 'Sport Coupe', price: '2,100', rating: '4.6', reviews: '1,936', passengers: 2, doors: 2, category: 'luxury' },
-        { image: '/images/bmw-car.jpg', name: 'BMW M3 Competition', slug: 'bmw-m3', brand: 'BMW', bodyType: 'Sedan', price: '1,600', rating: '4.5', reviews: '2,036', passengers: 4, doors: 4, category: 'popular,luxury' },
-        { image: '/images/lamborghini-car.jpg', name: 'Lamborghini Huracán EVO', slug: 'lamborghini-huracan', brand: 'Lamborghini', bodyType: 'Coup', price: '2,300', rating: '4.3', reviews: '2,236', passengers: 2, doors: 2, category: 'luxury' },
-        { image: '/images/volvo-car.jpg', name: 'Volvo XC90 Recharge 7-Seater', slug: 'volvo-xc90-recharge-2023', brand: 'Volvo', bodyType: 'Family MBP', price: '2,200', rating: '4.9', reviews: '1,420', passengers: 7, doors: 4, category: 'family,luxury' },
-        { image: '/images/jeep-car.jpg', name: 'Jeep Wrangler Rubicon 4x4', slug: 'jeep-wrangler-rubicon-392-2023', brand: 'Jeep', bodyType: 'SUV', price: '2,400', rating: '4.8', reviews: '1,830', passengers: 5, doors: 4, category: 'off-road,popular' },
-        { image: '/images/ferrari-car.jpg', name: '1974 Ferrari Dino 246 GT', slug: 'ferrari-dino-246-gt-classic', brand: 'Ferrari', bodyType: 'Coup', price: '3,500', rating: '5.0', reviews: '980', passengers: 2, doors: 2, category: 'vintage,luxury' },
-        { image: '/images/hero-car.jpg', name: 'Chevrolet Corvette Stingray 3LT V8', slug: 'chevrolet-corvette-stingray-2023', brand: 'Chevrolet', bodyType: 'Sport Coupe', price: '2,800', rating: '4.9', reviews: '1,420', passengers: 2, doors: 2, category: 'luxury,popular' },
-        { image: '/images/corolla-cross-2.jpg', name: 'Volkswagen Golf GTI Performance Mk8', slug: 'volkswagen-golf-gti-2023', brand: 'Volkswagen', bodyType: 'Compact', price: '1,500', rating: '4.7', reviews: '1,890', passengers: 5, doors: 4, category: 'popular' },
-        { image: '/images/bmw-car.jpg', name: 'Honda Civic Type R FL5 Turbo', slug: 'honda-civic-type-r-2023', brand: 'Honda', bodyType: 'Compact', price: '1,900', rating: '4.9', reviews: '2,150', passengers: 4, doors: 4, category: 'popular,luxury' },
-        { image: '/images/audi-car.jpg', name: 'Nissan GT-R Nismo Track Edition', slug: 'nissan-gt-r-nismo-2022', brand: 'Nissan', bodyType: 'Sport Coupe', price: '2,700', rating: '4.9', reviews: '1,980', passengers: 4, doors: 2, category: 'luxury,popular' },
-        { image: '/images/hero-car.jpg', name: 'Mercedes-Benz S500 4MATIC Limousine', slug: 'mercedes-benz-s500-limousine-2023', brand: 'Mercedes-Benz', bodyType: 'Limousine', price: '3,200', rating: '5.0', reviews: '1,720', passengers: 5, doors: 4, category: 'luxury,popular' },
-        { image: '/images/corolla-cross-1.jpg', name: 'Hyundai Tucson Hybrid HTRAC Crossover', slug: 'hyundai-tucson-hybrid-2023', brand: 'Hyundai', bodyType: 'Crossover', price: '1,600', rating: '4.7', reviews: '1,640', passengers: 5, doors: 4, category: 'popular,family' },
-        { image: '/images/corolla-cross-3.jpg', name: 'Kia Sportage X-Line AWD Crossover', slug: 'kia-sportage-x-line-2023', brand: 'Kia', bodyType: 'Crossover', price: '1,700', rating: '4.8', reviews: '1,530', passengers: 5, doors: 4, category: 'popular,family' },
-        { image: '/images/bmw-car.png', name: 'Ford Mustang GT Premium Convertible', slug: 'ford-mustang-gt-convertible-2023', brand: 'Ford', bodyType: 'Convertible', price: '2,400', rating: '4.8', reviews: '1,890', passengers: 4, doors: 2, category: 'luxury,popular' },
-        { image: '/images/hero-car.jpg', name: 'Tesla Model 3 Performance AWD', slug: 'tesla-model-3-performance-2023', brand: 'Tesla', bodyType: 'Sedan', price: '2,100', rating: '4.9', reviews: '2,310', passengers: 5, doors: 4, category: 'popular,luxury' },
-        { image: '/images/audi-car.jpg', name: 'Audi RS6 Avant Performance Wagon', slug: 'audi-rs6-avant-performance-2023', brand: 'Audi', bodyType: 'Wagon', price: '2,900', rating: '5.0', reviews: '1,430', passengers: 5, doors: 5, category: 'luxury,family' },
+        { image: '/images/corolla-cross-1.jpg', name: 'Toyota Corolla Cross Hybrid', slug: 'toyota-corolla-cross-hybrid-2021', brand: 'Toyota', bodyType: 'SUV', askingPrice: '৳ 37,00,000', priceLakh: '37 Lakh Tk', rating: '4.9', reviews: '2,436', passengers: 5, doors: 4, category: 'popular,family' },
+        { image: '/images/hero-car.jpg', name: 'Jaguar XE L P250', slug: 'jaguar-xe-l-p250', brand: 'Jaguar', bodyType: 'Sedan', askingPrice: '৳ 48,00,000', priceLakh: '48 Lakh Tk', rating: '4.8', reviews: '2,436', passengers: 4, doors: 4, category: 'luxury,popular' },
+        { image: '/images/audi-car.jpg', name: 'Audi R8 Performance', slug: 'audi-r8', brand: 'Audi', bodyType: 'Sport Coupe', askingPrice: '৳ 1,85,00,000', priceLakh: '1.85 Crore Tk', rating: '4.6', reviews: '1,936', passengers: 2, doors: 2, category: 'luxury' },
+        { image: '/images/bmw-car.jpg', name: 'BMW M3 Competition', slug: 'bmw-m3', brand: 'BMW', bodyType: 'Sedan', askingPrice: '৳ 1,35,00,000', priceLakh: '1.35 Crore Tk', rating: '4.5', reviews: '2,036', passengers: 4, doors: 4, category: 'popular,luxury' },
+        { image: '/images/lamborghini-car.jpg', name: 'Lamborghini Huracán EVO', slug: 'lamborghini-huracan', brand: 'Lamborghini', bodyType: 'Coup', askingPrice: '৳ 2,90,00,000', priceLakh: '2.90 Crore Tk', rating: '4.3', reviews: '2,236', passengers: 2, doors: 2, category: 'luxury' },
+        { image: '/images/volvo-car.jpg', name: 'Volvo XC90 Recharge 7-Seater', slug: 'volvo-xc90-recharge-2023', brand: 'Volvo', bodyType: 'Family MBP', askingPrice: '৳ 95,00,000', priceLakh: '95 Lakh Tk', rating: '4.9', reviews: '1,420', passengers: 7, doors: 4, category: 'family,luxury' },
+        { image: '/images/jeep-car.jpg', name: 'Jeep Wrangler Rubicon 4x4', slug: 'jeep-wrangler-rubicon-392-2023', brand: 'Jeep', bodyType: 'SUV', askingPrice: '৳ 88,00,000', priceLakh: '88 Lakh Tk', rating: '4.8', reviews: '1,830', passengers: 5, doors: 4, category: 'off-road,popular' },
+        { image: '/images/ferrari-car.jpg', name: '1974 Ferrari Dino 246 GT', slug: 'ferrari-dino-246-gt-classic', brand: 'Ferrari', bodyType: 'Coup', askingPrice: '৳ 3,50,00,000', priceLakh: '3.50 Crore Tk', rating: '5.0', reviews: '980', passengers: 2, doors: 2, category: 'vintage,luxury' },
+        { image: '/images/hero-car.jpg', name: 'Chevrolet Corvette Stingray 3LT V8', slug: 'chevrolet-corvette-stingray-2023', brand: 'Chevrolet', bodyType: 'Sport Coupe', askingPrice: '৳ 1,45,00,000', priceLakh: '1.45 Crore Tk', rating: '4.9', reviews: '1,420', passengers: 2, doors: 2, category: 'luxury,popular' },
+        { image: '/images/corolla-cross-2.jpg', name: 'Volkswagen Golf GTI Performance Mk8', slug: 'volkswagen-golf-gti-2023', brand: 'Volkswagen', bodyType: 'Compact', askingPrice: '৳ 55,00,000', priceLakh: '55 Lakh Tk', rating: '4.7', reviews: '1,890', passengers: 5, doors: 4, category: 'popular' },
+        { image: '/images/bmw-car.jpg', name: 'Honda Civic Type R FL5 Turbo', slug: 'honda-civic-type-r-2023', brand: 'Honda', bodyType: 'Compact', askingPrice: '৳ 78,00,000', priceLakh: '78 Lakh Tk', rating: '4.9', reviews: '2,150', passengers: 4, doors: 4, category: 'popular,luxury' },
+        { image: '/images/audi-car.jpg', name: 'Nissan GT-R Nismo Track Edition', slug: 'nissan-gt-r-nismo-2022', brand: 'Nissan', bodyType: 'Sport Coupe', askingPrice: '৳ 1,75,00,000', priceLakh: '1.75 Crore Tk', rating: '4.9', reviews: '1,980', passengers: 4, doors: 2, category: 'luxury,popular' },
+        { image: '/images/hero-car.jpg', name: 'Mercedes-Benz S500 4MATIC Limousine', slug: 'mercedes-benz-s500-limousine-2023', brand: 'Mercedes-Benz', bodyType: 'Limousine', askingPrice: '৳ 2,40,00,000', priceLakh: '2.40 Crore Tk', rating: '5.0', reviews: '1,720', passengers: 5, doors: 4, category: 'luxury,popular' },
+        { image: '/images/corolla-cross-1.jpg', name: 'Hyundai Tucson Hybrid HTRAC Crossover', slug: 'hyundai-tucson-hybrid-2023', brand: 'Hyundai', bodyType: 'Crossover', askingPrice: '৳ 42,00,000', priceLakh: '42 Lakh Tk', rating: '4.7', reviews: '1,640', passengers: 5, doors: 4, category: 'popular,family' },
+        { image: '/images/corolla-cross-3.jpg', name: 'Kia Sportage X-Line AWD Crossover', slug: 'kia-sportage-x-line-2023', brand: 'Kia', bodyType: 'Crossover', askingPrice: '৳ 44,00,000', priceLakh: '44 Lakh Tk', rating: '4.8', reviews: '1,530', passengers: 5, doors: 4, category: 'popular,family' },
+        { image: '/images/bmw-car.png', name: 'Ford Mustang GT Premium Convertible', slug: 'ford-mustang-gt-convertible-2023', brand: 'Ford', bodyType: 'Convertible', askingPrice: '৳ 95,00,000', priceLakh: '95 Lakh Tk', rating: '4.8', reviews: '1,890', passengers: 4, doors: 2, category: 'luxury,popular' },
+        { image: '/images/hero-car.jpg', name: 'Tesla Model 3 Performance AWD', slug: 'tesla-model-3-performance-2023', brand: 'Tesla', bodyType: 'Sedan', askingPrice: '৳ 82,00,000', priceLakh: '82 Lakh Tk', rating: '4.9', reviews: '2,310', passengers: 5, doors: 4, category: 'popular,luxury' },
+        { image: '/images/audi-car.jpg', name: 'Audi RS6 Avant Performance Wagon', slug: 'audi-rs6-avant-performance-2023', brand: 'Audi', bodyType: 'Wagon', askingPrice: '৳ 1,90,00,000', priceLakh: '1.90 Crore Tk', rating: '5.0', reviews: '1,430', passengers: 5, doors: 5, category: 'luxury,family' },
+        { image: '/images/hero-car.jpg', name: '2023 Lexus ES 350', slug: '2023-lexus-es-350-9mkwd', brand: 'Lexus', bodyType: 'Sedan', askingPrice: '৳ 1,845,000', priceLakh: '18.45 Lakh Tk', rating: '5.0', reviews: '1', passengers: 5, doors: 4, category: 'popular,luxury' },
     ];
 
     const collectionCars = dbCollectionCars && dbCollectionCars.length > 0 ? dbCollectionCars : defaultCollectionCars;
@@ -239,33 +293,23 @@ export default function Welcome({ auth, collectionCars: dbCollectionCars, popula
         'Off-Road Car': 'off-road',
     };
 
-    const scrollToCollection = () => {
-        setTimeout(() => {
-            const section = document.getElementById('impressive-collection-section');
-            if (section) {
-                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const navigateToCars = (params = {}) => {
+        const query = new URLSearchParams();
+        Object.entries(params).forEach(([k, v]) => {
+            if (v !== null && v !== undefined && v !== '' && v !== 'all') {
+                query.set(k, v);
             }
-        }, 50);
+        });
+        const qs = query.toString();
+        window.location.href = `/cars${qs ? `?${qs}` : ''}`;
     };
 
     const handleBrandSelect = (brandName) => {
-        if (selectedBrand?.toLowerCase() === brandName.toLowerCase()) {
-            setSelectedBrand(null);
-        } else {
-            setSelectedBrand(brandName);
-            setSelectedBodyType(null);
-            scrollToCollection();
-        }
+        navigateToCars({ brand: brandName });
     };
 
     const handleBodyTypeSelect = (typeName) => {
-        if (selectedBodyType?.toLowerCase() === typeName.toLowerCase()) {
-            setSelectedBodyType(null);
-        } else {
-            setSelectedBodyType(typeName);
-            setSelectedBrand(null);
-            scrollToCollection();
-        }
+        navigateToCars({ bodyType: typeName });
     };
 
     const filteredCollectionCars = useMemo(() => {
@@ -446,9 +490,9 @@ export default function Welcome({ auth, collectionCars: dbCollectionCars, popula
 
                             {/* Nav Links */}
                             <div className="hidden lg:flex items-center gap-9 text-[14px] font-semibold text-gray-800">
-                                <a href="#cars-section" className="hover:text-[#1877F2] transition-colors">Buy</a>
+                                <Link href="/cars" className="hover:text-[#1877F2] transition-colors">Buy</Link>
                                 <a href="#how-it-works-section" className="hover:text-[#1877F2] transition-colors">Sell</a>
-                                <a href="#impressive-collection-section" className="hover:text-[#1877F2] transition-colors">Hot Deals</a>
+                                <Link href="/cars" className="hover:text-[#1877F2] transition-colors">Hot Deals</Link>
                                 <a href="#how-it-works-section" className="hover:text-[#1877F2] transition-colors">How it works</a>
                                 <a href="#why-choose-us-section" className="hover:text-[#1877F2] transition-colors">Why choose us</a>
                             </div>
@@ -532,11 +576,13 @@ export default function Welcome({ auth, collectionCars: dbCollectionCars, popula
                     <div className="absolute -bottom-14 sm:-bottom-12 left-1/2 -translate-x-1/2 w-[95%] max-w-[1150px] z-40">
                         <HeroCarFilter
                             onSearch={(filters) => {
-                                if (filters?.brand) {
-                                    setSelectedBrand(filters.brand);
-                                    setSelectedBodyType(null);
-                                }
-                                scrollToCollection();
+                                const params = {};
+                                if (filters?.brand) params.brand = filters.brand;
+                                if (filters?.model) params.model = filters.model;
+                                if (filters?.price?.min !== undefined && filters?.price?.min !== null) params.minPrice = filters.price.min;
+                                if (filters?.price?.max !== undefined && filters?.price?.max !== null) params.maxPrice = filters.price.max;
+                                if (filters?.condition?.id && filters.condition.id !== 'all') params.condition = filters.condition.id;
+                                navigateToCars(params);
                             }}
                         />
                     </div>
@@ -558,11 +604,11 @@ export default function Welcome({ auth, collectionCars: dbCollectionCars, popula
                         {/* Cars Grid */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
                             {(collectionCars && collectionCars.length > 0 ? collectionCars.slice(0, 5) : [
-                                { name: 'Toyota Corolla Cross Hybrid', slug: 'toyota-corolla-cross-hybrid-2021', rating: '4.9', reviews: '2,436', passengers: 5, type: 'Auto', ac: true, doors: 4, price: '38 Lakh Tk', img: '/images/corolla-cross-1.jpg' },
-                                { name: 'Jaguar XE L P250', slug: 'jaguar-xe-l-p250', rating: '4.8', reviews: '2,436', passengers: 4, type: 'Auto', ac: true, doors: 4, price: '48 Lakh Tk', img: '/images/hero-car.jpg' },
-                                { name: 'Audi R8', slug: 'audi-r8', rating: '4.6', reviews: '1,936', passengers: 2, type: 'Auto', ac: true, doors: 2, price: '1.85 Crore Tk', img: '/images/audi-car.jpg' },
-                                { name: 'BMW M3', slug: 'bmw-m3', rating: '4.5', reviews: '2,036', passengers: 4, type: 'Auto', ac: true, doors: 4, price: '1.35 Crore Tk', img: '/images/bmw-car.jpg' },
-                                { name: 'Lamborghini Huracán', slug: 'lamborghini-huracan', rating: '4.3', reviews: '2,236', passengers: 2, type: 'Auto', ac: true, doors: 2, price: '2.90 Crore Tk', img: '/images/lamborghini-car.jpg' },
+                                { name: 'Toyota Corolla Cross Hybrid', slug: 'toyota-corolla-cross-hybrid-2021', rating: '4.9', reviews: '2,436', passengers: 5, type: 'Auto', ac: true, doors: 4, askingPrice: '৳ 37,00,000', img: '/images/corolla-cross-1.jpg' },
+                                { name: 'Jaguar XE L P250', slug: 'jaguar-xe-l-p250', rating: '4.8', reviews: '2,436', passengers: 4, type: 'Auto', ac: true, doors: 4, askingPrice: '৳ 48,00,000', img: '/images/hero-car.jpg' },
+                                { name: 'Audi R8', slug: 'audi-r8', rating: '4.6', reviews: '1,936', passengers: 2, type: 'Auto', ac: true, doors: 2, askingPrice: '৳ 1,85,00,000', img: '/images/audi-car.jpg' },
+                                { name: 'BMW M3', slug: 'bmw-m3', rating: '4.5', reviews: '2,036', passengers: 4, type: 'Auto', ac: true, doors: 4, askingPrice: '৳ 1,35,00,000', img: '/images/bmw-car.jpg' },
+                                { name: 'Lamborghini Huracán', slug: 'lamborghini-huracan', rating: '4.3', reviews: '2,236', passengers: 2, type: 'Auto', ac: true, doors: 2, askingPrice: '৳ 2,90,00,000', img: '/images/lamborghini-car.jpg' },
                             ]).map((car, idx) => {
                                 const carName = car.name;
                                 const carSlug = car.slug || 'toyota-corolla-cross-hybrid-2021';
@@ -572,7 +618,7 @@ export default function Welcome({ auth, collectionCars: dbCollectionCars, popula
                                 const carType = car.type || car.transmission || 'Auto';
                                 const carDoors = car.doors || 4;
                                 const carImg = car.img || car.mainImage || car.main_image || car.image || '/images/hero-car.jpg';
-                                const carPrice = car.price || car.askingPrice || car.asking_price || (car.priceLakh ? `${car.priceLakh} Tk` : (car.price_lakh ? `${car.price_lakh} Tk` : '৳ 35 Lakh Tk'));
+                                const carPrice = getDisplaySellingPrice(car, carSlug);
                                 const isUserAd = Boolean(car.user_id);
 
                                 return (
@@ -636,9 +682,9 @@ export default function Welcome({ auth, collectionCars: dbCollectionCars, popula
                         </div>
 
                         <div className="mt-12 flex justify-center">
-                            <a href="#impressive-collection-section" className="flex items-center gap-2 border border-gray-300 rounded-lg px-6 py-2.5 text-gray-600 font-semibold text-[13px] hover:bg-gray-50 transition-colors">
+                            <Link href="/cars" className="flex items-center gap-2 border border-gray-300 rounded-lg px-6 py-2.5 text-gray-600 font-semibold text-[13px] hover:bg-gray-50 transition-colors">
                                 Browse all cars for sale <span className="text-lg leading-none">→</span>
-                            </a>
+                            </Link>
                         </div>
                     </div>
                 </section>
@@ -882,11 +928,7 @@ export default function Welcome({ auth, collectionCars: dbCollectionCars, popula
                             </div>
                             <button
                                 type="button"
-                                onClick={() => {
-                                    setSelectedBodyType(null);
-                                    setSelectedBrand(null);
-                                    scrollToCollection();
-                                }}
+                                onClick={() => navigateToCars({})}
                                 className="flex items-center gap-1.5 text-gray-600 font-semibold text-[13px] hover:text-[#1877F2] transition-colors cursor-pointer group"
                             >
                                 <span>View all</span>
@@ -1161,117 +1203,6 @@ export default function Welcome({ auth, collectionCars: dbCollectionCars, popula
                     </div>
                 </section>
 
-                {/* ═══ OUR IMPRESSIVE COLLECTION ═════════════════════════════ */}
-                <section id="impressive-collection-section" className="bg-[#E6EEF6] pt-16 pb-24 scroll-mt-6">
-                    <div className="max-w-[1220px] mx-auto px-6 lg:px-8">
-
-                        {/* Section Header */}
-                        <div className="text-center mb-10">
-                            <h2 className="text-[2.2rem] font-bold text-gray-900 mb-4 tracking-tight">Our Impressive Collection of Cars</h2>
-                            <p className="text-gray-800 font-semibold text-[13px] max-w-2xl mx-auto leading-relaxed">
-                                Ranging from elegant sedans to powerful sports cars, all carefully selected to provide<br className="hidden md:block" /> our customers with the ultimate driving experience.
-                            </p>
-                        </div>
-
-                        {/* Active Filter Banner (when Brand or Body Type is active) */}
-                        {(selectedBrand || selectedBodyType) && (
-                            <div className="flex flex-wrap items-center justify-between gap-3 bg-white/95 backdrop-blur border border-blue-200/80 rounded-2xl px-6 py-3.5 mb-8 shadow-sm max-w-2xl mx-auto">
-                                <div className="flex items-center gap-2.5 flex-wrap">
-                                    <span className="w-2.5 h-2.5 rounded-full bg-[#1877F2] animate-pulse"></span>
-                                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                        {selectedBrand ? 'Filtered by Brand:' : 'Filtered by Body Type:'}
-                                    </span>
-                                    <span className="bg-[#1877F2] text-white font-bold text-xs px-3.5 py-1 rounded-full shadow-sm flex items-center gap-1.5">
-                                        <span>{selectedBrand || selectedBodyType}</span>
-                                    </span>
-                                    <span className="text-xs text-gray-500 font-medium">
-                                        ({filteredCollectionCars.length} {filteredCollectionCars.length === 1 ? 'vehicle' : 'vehicles'} found)
-                                    </span>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setSelectedBrand(null);
-                                        setSelectedBodyType(null);
-                                    }}
-                                    className="text-xs font-bold text-[#1877F2] hover:text-blue-800 flex items-center gap-1 hover:underline cursor-pointer ml-auto"
-                                >
-                                    <span>Clear filter</span>
-                                    <span>✕</span>
-                                </button>
-                            </div>
-                        )}
-
-                        {/* Tabs / Pills */}
-                        <div className="flex flex-wrap items-center justify-center gap-3 mb-12">
-                            {collectionTabs.map((tab) => {
-                                const isActive = !selectedBrand && !selectedBodyType && activeCollectionTab === tab;
-                                return (
-                                    <button
-                                        key={tab}
-                                        type="button"
-                                        onClick={() => {
-                                            setSelectedBrand(null);
-                                            setSelectedBodyType(null);
-                                            setActiveCollectionTab(tab);
-                                        }}
-                                        className={`px-6 py-2.5 rounded-full font-bold text-[13px] transition-all duration-200 shadow-sm cursor-pointer ${isActive
-                                                ? 'bg-[#151515] text-white shadow-md scale-105 ring-2 ring-[#151515]/20'
-                                                : 'bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900 border border-gray-200 hover:shadow'
-                                            }`}
-                                    >
-                                        {tab}
-                                    </button>
-                                );
-                            })}
-                        </div>
-
-                        {/* Grid - 5 columns or Empty State */}
-                        {filteredCollectionCars.length > 0 ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-5 transition-all duration-300">
-                                {filteredCollectionCars.map((car, i) => (
-                                    <CarCard key={car.id || car.slug || i} {...car} />
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="py-14 px-6 bg-white/90 backdrop-blur rounded-3xl border border-gray-200/80 text-center shadow-sm max-w-lg mx-auto">
-                                <div className="w-16 h-16 bg-blue-50 text-[#1877F2] rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
-                                    🔍
-                                </div>
-                                <h3 className="text-lg font-bold text-gray-900 mb-1">No matching cars found</h3>
-                                <p className="text-gray-500 text-sm max-w-md mx-auto mb-6">
-                                    We currently don't have vehicles matching "{selectedBrand || selectedBodyType}". Try clearing the filter to explore all available vehicles.
-                                </p>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setSelectedBrand(null);
-                                        setSelectedBodyType(null);
-                                    }}
-                                    className="bg-[#1877F2] hover:bg-blue-700 text-white font-bold text-xs px-6 py-2.5 rounded-xl transition-colors shadow-md"
-                                >
-                                    Show All Vehicles
-                                </button>
-                            </div>
-                        )}
-
-                        {/* Bottom Button */}
-                        <div className="flex justify-center mt-12">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setSelectedBrand(null);
-                                    setSelectedBodyType(null);
-                                    scrollToCollection();
-                                }}
-                                className="bg-[#1877F2] hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold text-[14px] transition-colors shadow-md flex items-center gap-1.5 cursor-pointer"
-                            >
-                                See all Cars <span className="text-lg leading-none">→</span>
-                            </button>
-                        </div>
-                    </div>
-                </section>
-
                 {/* ═══ UNLEASH YOUR JOURNEY / ZIG ZAG ════════════════════════ */}
                 <section className="bg-white pt-16 pb-12 lg:pt-20 lg:pb-14 relative overflow-hidden">
                     <div className="max-w-[1240px] mx-auto px-6 lg:px-10">
@@ -1319,11 +1250,7 @@ export default function Welcome({ auth, collectionCars: dbCollectionCars, popula
                                 <div className="flex flex-wrap items-center gap-3.5">
                                     <button
                                         type="button"
-                                        onClick={() => {
-                                            setSelectedBrand(null);
-                                            setSelectedBodyType(null);
-                                            scrollToCollection();
-                                        }}
+                                        onClick={() => navigateToCars({})}
                                         className="bg-[#1877F2] hover:bg-blue-700 text-white px-7 py-3 rounded-xl font-bold text-[14px] transition-all duration-200 shadow-md hover:shadow-blue-500/25 flex items-center gap-2 cursor-pointer group"
                                     >
                                         <span>Explore Available Cars</span>
@@ -1667,7 +1594,7 @@ export default function Welcome({ auth, collectionCars: dbCollectionCars, popula
                                 <h4 className="text-white font-medium text-[15px] mb-4">Our Marketplace</h4>
                                 <ul className="space-y-2.5 text-[13px] text-slate-300/90 font-normal">
                                     <li><a href="#cars-section" className="hover:text-white transition-colors">Certified Cars</a></li>
-                                    <li><a href="#impressive-collection-section" className="hover:text-white transition-colors">Brand New Cars</a></li>
+                                    <li><Link href="/cars" className="hover:text-white transition-colors">Brand New Cars</Link></li>
                                     <li><a href="#how-it-works-section" className="hover:text-white transition-colors">Sell Your Car</a></li>
                                     <li><a href="#why-choose-us-section" className="hover:text-white transition-colors">Inspection Reports</a></li>
                                 </ul>
@@ -1812,7 +1739,7 @@ export default function Welcome({ auth, collectionCars: dbCollectionCars, popula
                                             onClick={() => {
                                                 setSelectedBrand(null);
                                                 setBrandModalOpen(false);
-                                                scrollToCollection();
+                                                navigateToCars({});
                                             }}
                                             className="text-xs font-bold text-[#1877F2] hover:underline cursor-pointer"
                                         >
@@ -1834,7 +1761,7 @@ export default function Welcome({ auth, collectionCars: dbCollectionCars, popula
                                                         setSelectedBrand(b.name);
                                                         setSelectedBodyType(null);
                                                         setBrandModalOpen(false);
-                                                        scrollToCollection();
+                                                        navigateToCars({ brand: b.name });
                                                     }}
                                                     className={`flex items-center justify-between p-3 rounded-xl border text-left text-xs font-semibold transition-all cursor-pointer ${isSelected
                                                             ? 'bg-[#1877F2] text-white border-[#1877F2] shadow-md scale-[1.02]'
@@ -1861,7 +1788,7 @@ export default function Welcome({ auth, collectionCars: dbCollectionCars, popula
                                     onClick={() => {
                                         setSelectedBrand(null);
                                         setBrandModalOpen(false);
-                                        scrollToCollection();
+                                        navigateToCars({});
                                     }}
                                     className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
                                 >

@@ -9,6 +9,7 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [CarController::class, 'index'])->name('home');
+Route::get('/cars', [CarController::class, 'cars'])->name('cars.index');
 Route::get('/car/{slug?}', [CarController::class, 'show'])->name('car.details');
 
 Route::middleware(['auth', 'verified'])->group(function () {
