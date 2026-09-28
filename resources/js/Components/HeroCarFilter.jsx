@@ -22,15 +22,24 @@ export default function HeroCarFilter({ onSearch }) {
     const brandInputRef = useRef(null);
     const modelInputRef = useRef(null);
 
-    // Close dropdowns when clicking outside
+    // Close dropdowns when clicking outside or pressing Escape
     useEffect(() => {
         function handleClickOutside(event) {
             if (containerRef.current && !containerRef.current.contains(event.target)) {
                 setOpenDropdown(null);
             }
         }
+        function handleKeyDown(event) {
+            if (event.key === 'Escape') {
+                setOpenDropdown(null);
+            }
+        }
         document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        document.addEventListener('keydown', handleKeyDown);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('keydown', handleKeyDown);
+        };
     }, []);
 
     // Focus search input when dropdown opens
@@ -152,15 +161,15 @@ export default function HeroCarFilter({ onSearch }) {
     return (
         <div ref={containerRef} className="relative w-full z-40">
             {/* Main Filter Bar Card */}
-            <div className="bg-white rounded-2xl shadow-[0_12px_45px_rgba(0,0,0,0.13)] border border-gray-100/80 p-3 sm:p-4 lg:p-5">
-                <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-2 lg:gap-0">
+            <div className="bg-white rounded-2xl shadow-[0_12px_45px_rgba(0,0,0,0.12)] border border-gray-100 p-2.5 sm:p-3.5 lg:p-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-row items-stretch lg:items-center gap-2 lg:gap-0">
 
-                    {/* ═══ 1. BRAND DROPDOWN (OPENS UPWARDS) ═══ */}
-                    <div className="relative flex-1 lg:border-r border-gray-200/80 lg:pr-4">
+                    {/* ═══ 1. BRAND DROPDOWN ═══ */}
+                    <div className="relative flex-1 lg:border-r border-gray-200/80 lg:pr-3">
                         <button
                             type="button"
                             onClick={() => setOpenDropdown(openDropdown === 'brand' ? null : 'brand')}
-                            className={`w-full text-left p-2.5 rounded-xl transition-all flex items-center gap-3.5 ${openDropdown === 'brand' ? 'bg-blue-50/70 ring-2 ring-[#1877F2]/20' : 'hover:bg-gray-50/80'}`}
+                            className={`w-full text-left p-2.5 rounded-xl transition-all flex items-center gap-3 border border-gray-100 sm:border-transparent cursor-pointer ${openDropdown === 'brand' ? 'bg-blue-50/70 ring-2 ring-[#1877F2]/20 border-transparent' : 'bg-gray-50/50 sm:bg-transparent hover:bg-gray-50'}`}
                         >
                             {/* Icon */}
                             <div className="w-10 h-10 rounded-xl bg-[#EBF3FE] text-[#1877F2] flex items-center justify-center shrink-0">
@@ -183,9 +192,9 @@ export default function HeroCarFilter({ onSearch }) {
                             </svg>
                         </button>
 
-                        {/* Brand Popover - Opens UPWARDS */}
+                        {/* Brand Popover - Opens DOWNWARDS */}
                         {openDropdown === 'brand' && (
-                            <div className="absolute bottom-full left-0 mb-3 w-[320px] sm:w-[360px] bg-white rounded-2xl shadow-[0_-12px_45px_rgba(0,0,0,0.18)] border border-gray-100 p-3 z-50 animate-in fade-in zoom-in-95 duration-150">
+                            <div className="absolute top-full left-0 right-0 sm:right-auto sm:w-[320px] md:w-[340px] mt-2 bg-white rounded-2xl shadow-[0_16px_50px_rgba(0,0,0,0.18)] border border-gray-200 p-3 z-50 animate-in fade-in zoom-in-95 duration-150">
                                 {/* Search input */}
                                 <div className="relative mb-2">
                                     <svg className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -203,7 +212,7 @@ export default function HeroCarFilter({ onSearch }) {
                                         <button
                                             type="button"
                                             onClick={() => setBrandSearch('')}
-                                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5"
+                                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5 cursor-pointer"
                                         >
                                             ✕
                                         </button>
@@ -219,7 +228,7 @@ export default function HeroCarFilter({ onSearch }) {
                                             setSelectedModel('');
                                             setOpenDropdown(null);
                                         }}
-                                        className={`w-full text-left px-3 py-2 rounded-lg text-[13px] font-semibold flex items-center justify-between transition-colors ${!selectedBrand ? 'bg-blue-50 text-[#1877F2]' : 'text-gray-700 hover:bg-gray-50'}`}
+                                        className={`w-full text-left px-3 py-2 rounded-lg text-[13px] font-semibold flex items-center justify-between transition-colors cursor-pointer ${!selectedBrand ? 'bg-blue-50 text-[#1877F2]' : 'text-gray-700 hover:bg-gray-50'}`}
                                     >
                                         <span>All Brands (Any Make)</span>
                                         {!selectedBrand && (
@@ -229,7 +238,7 @@ export default function HeroCarFilter({ onSearch }) {
                                 </div>
 
                                 {/* Brands list */}
-                                <div className="max-h-[260px] overflow-y-auto space-y-0.5 pr-1 text-sm custom-scrollbar">
+                                <div className="max-h-[220px] sm:max-h-[260px] overflow-y-auto space-y-0.5 pr-1 text-sm custom-scrollbar">
                                     {filteredBrands.length === 0 ? (
                                         <div className="py-6 text-center text-xs text-gray-400">
                                             No brands found matching "{brandSearch}"
@@ -240,7 +249,7 @@ export default function HeroCarFilter({ onSearch }) {
                                                 key={brand.name}
                                                 type="button"
                                                 onClick={() => handleSelectBrand(brand.name)}
-                                                className={`w-full text-left px-3 py-2 rounded-lg text-[13px] flex items-center justify-between transition-colors ${selectedBrand === brand.name ? 'bg-blue-50 text-[#1877F2] font-bold' : 'text-gray-700 hover:bg-gray-50 font-medium'}`}
+                                                className={`w-full text-left px-3 py-2 rounded-lg text-[13px] flex items-center justify-between transition-colors cursor-pointer ${selectedBrand === brand.name ? 'bg-blue-50 text-[#1877F2] font-bold' : 'text-gray-700 hover:bg-gray-50 font-medium'}`}
                                             >
                                                 <div className="flex items-center gap-2">
                                                     <span>{brand.name}</span>
@@ -261,12 +270,12 @@ export default function HeroCarFilter({ onSearch }) {
                         )}
                     </div>
 
-                    {/* ═══ 2. MODEL DROPDOWN (OPENS UPWARDS) ═══ */}
-                    <div className="relative flex-1 lg:border-r border-gray-200/80 lg:px-4">
+                    {/* ═══ 2. MODEL DROPDOWN ═══ */}
+                    <div className="relative flex-1 lg:border-r border-gray-200/80 lg:px-3">
                         <button
                             type="button"
                             onClick={() => setOpenDropdown(openDropdown === 'model' ? null : 'model')}
-                            className={`w-full text-left p-2.5 rounded-xl transition-all flex items-center gap-3.5 ${openDropdown === 'model' ? 'bg-blue-50/70 ring-2 ring-[#1877F2]/20' : 'hover:bg-gray-50/80'}`}
+                            className={`w-full text-left p-2.5 rounded-xl transition-all flex items-center gap-3 border border-gray-100 sm:border-transparent cursor-pointer ${openDropdown === 'model' ? 'bg-blue-50/70 ring-2 ring-[#1877F2]/20 border-transparent' : 'bg-gray-50/50 sm:bg-transparent hover:bg-gray-50'}`}
                         >
                             {/* Icon */}
                             <div className="w-10 h-10 rounded-xl bg-[#EBF3FE] text-[#1877F2] flex items-center justify-center shrink-0">
@@ -289,9 +298,9 @@ export default function HeroCarFilter({ onSearch }) {
                             </svg>
                         </button>
 
-                        {/* Model Popover - Opens UPWARDS */}
+                        {/* Model Popover - Opens DOWNWARDS */}
                         {openDropdown === 'model' && (
-                            <div className="absolute bottom-full left-0 mb-3 w-[320px] sm:w-[360px] bg-white rounded-2xl shadow-[0_-12px_45px_rgba(0,0,0,0.18)] border border-gray-100 p-3 z-50 animate-in fade-in zoom-in-95 duration-150">
+                            <div className="absolute top-full left-0 right-0 sm:left-auto sm:right-0 lg:right-auto lg:left-0 sm:w-[320px] md:w-[340px] mt-2 bg-white rounded-2xl shadow-[0_16px_50px_rgba(0,0,0,0.18)] border border-gray-200 p-3 z-50 animate-in fade-in zoom-in-95 duration-150">
                                 {/* Search input */}
                                 <div className="relative mb-2">
                                     <svg className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -309,7 +318,7 @@ export default function HeroCarFilter({ onSearch }) {
                                         <button
                                             type="button"
                                             onClick={() => setModelSearch('')}
-                                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5"
+                                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5 cursor-pointer"
                                         >
                                             ✕
                                         </button>
@@ -324,7 +333,7 @@ export default function HeroCarFilter({ onSearch }) {
                                             setSelectedModel('');
                                             setOpenDropdown(null);
                                         }}
-                                        className={`w-full text-left px-3 py-2 rounded-lg text-[13px] font-semibold flex items-center justify-between transition-colors ${!selectedModel ? 'bg-blue-50 text-[#1877F2]' : 'text-gray-700 hover:bg-gray-50'}`}
+                                        className={`w-full text-left px-3 py-2 rounded-lg text-[13px] font-semibold flex items-center justify-between transition-colors cursor-pointer ${!selectedModel ? 'bg-blue-50 text-[#1877F2]' : 'text-gray-700 hover:bg-gray-50'}`}
                                     >
                                         <span>All {selectedBrand || 'Car'} Models</span>
                                         {!selectedModel && (
@@ -334,7 +343,7 @@ export default function HeroCarFilter({ onSearch }) {
                                 </div>
 
                                 {/* Models list */}
-                                <div className="max-h-[260px] overflow-y-auto space-y-0.5 pr-1 text-sm custom-scrollbar">
+                                <div className="max-h-[220px] sm:max-h-[260px] overflow-y-auto space-y-0.5 pr-1 text-sm custom-scrollbar">
                                     {filteredModels.length === 0 ? (
                                         <div className="py-6 text-center text-xs text-gray-400">
                                             No models found matching "{modelSearch}"
@@ -350,7 +359,7 @@ export default function HeroCarFilter({ onSearch }) {
                                                     key={`${brandName}-${modelName}-${idx}`}
                                                     type="button"
                                                     onClick={() => handleSelectModel(modelName, brandName)}
-                                                    className={`w-full text-left px-3 py-2 rounded-lg text-[13px] flex items-center justify-between transition-colors ${isSelected ? 'bg-blue-50 text-[#1877F2] font-bold' : 'text-gray-700 hover:bg-gray-50 font-medium'}`}
+                                                    className={`w-full text-left px-3 py-2 rounded-lg text-[13px] flex items-center justify-between transition-colors cursor-pointer ${isSelected ? 'bg-blue-50 text-[#1877F2] font-bold' : 'text-gray-700 hover:bg-gray-50 font-medium'}`}
                                                 >
                                                     <span>{modelName}</span>
                                                     {!selectedBrand && (
@@ -367,12 +376,12 @@ export default function HeroCarFilter({ onSearch }) {
                         )}
                     </div>
 
-                    {/* ═══ 3. PRICE RANGE IN TK (OPENS UPWARDS) ═══ */}
-                    <div className="relative flex-1 lg:border-r border-gray-200/80 lg:px-4">
+                    {/* ═══ 3. PRICE RANGE IN TK ═══ */}
+                    <div className="relative flex-1 lg:border-r border-gray-200/80 lg:px-3">
                         <button
                             type="button"
                             onClick={() => setOpenDropdown(openDropdown === 'price' ? null : 'price')}
-                            className={`w-full text-left p-2.5 rounded-xl transition-all flex items-center gap-3.5 ${openDropdown === 'price' ? 'bg-blue-50/70 ring-2 ring-[#1877F2]/20' : 'hover:bg-gray-50/80'}`}
+                            className={`w-full text-left p-2.5 rounded-xl transition-all flex items-center gap-3 border border-gray-100 sm:border-transparent cursor-pointer ${openDropdown === 'price' ? 'bg-blue-50/70 ring-2 ring-[#1877F2]/20 border-transparent' : 'bg-gray-50/50 sm:bg-transparent hover:bg-gray-50'}`}
                         >
                             {/* Bangladeshi Taka (৳) Symbol Icon */}
                             <div className="w-10 h-10 rounded-xl bg-[#EBF3FE] text-[#1877F2] flex items-center justify-center shrink-0 font-extrabold text-[20px] leading-none select-none">
@@ -393,9 +402,9 @@ export default function HeroCarFilter({ onSearch }) {
                             </svg>
                         </button>
 
-                        {/* Price Popover - Opens UPWARDS */}
+                        {/* Price Popover - Opens DOWNWARDS */}
                         {openDropdown === 'price' && (
-                            <div className="absolute bottom-full left-0 mb-3 w-[310px] sm:w-[350px] bg-white rounded-2xl shadow-[0_-12px_45px_rgba(0,0,0,0.18)] border border-gray-100 p-4 z-50 animate-in fade-in zoom-in-95 duration-150">
+                            <div className="absolute top-full left-0 right-0 sm:right-auto lg:right-auto lg:left-0 sm:w-[310px] md:w-[340px] mt-2 bg-white rounded-2xl shadow-[0_16px_50px_rgba(0,0,0,0.18)] border border-gray-200 p-4 z-50 animate-in fade-in zoom-in-95 duration-150">
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
                                         Budget in Taka (Tk)
@@ -405,7 +414,7 @@ export default function HeroCarFilter({ onSearch }) {
                                     </span>
                                 </div>
 
-                                <div className="space-y-1 max-h-[200px] overflow-y-auto pr-1">
+                                <div className="space-y-1 max-h-[180px] sm:max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
                                     {PRICE_RANGES.map((pr) => (
                                         <button
                                             key={pr.label}
@@ -414,7 +423,7 @@ export default function HeroCarFilter({ onSearch }) {
                                                 setSelectedPrice(pr);
                                                 setOpenDropdown(null);
                                             }}
-                                            className={`w-full text-left px-3 py-2 rounded-lg text-[13px] flex items-center justify-between transition-colors ${selectedPrice.label === pr.label ? 'bg-blue-50 text-[#1877F2] font-bold' : 'text-gray-700 hover:bg-gray-50 font-medium'}`}
+                                            className={`w-full text-left px-3 py-2 rounded-lg text-[13px] flex items-center justify-between transition-colors cursor-pointer ${selectedPrice.label === pr.label ? 'bg-blue-50 text-[#1877F2] font-bold' : 'text-gray-700 hover:bg-gray-50 font-medium'}`}
                                         >
                                             <span>{pr.label}</span>
                                             {selectedPrice.label === pr.label && (
@@ -435,7 +444,7 @@ export default function HeroCarFilter({ onSearch }) {
                                                 <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">৳</span>
                                                 <input
                                                     type="number"
-                                                    placeholder="Min Tk (e.g. 1500000)"
+                                                    placeholder="Min Tk"
                                                     value={customMin}
                                                     onChange={(e) => setCustomMin(e.target.value)}
                                                     className="w-full pl-6 pr-2 py-1.5 text-[12px] bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#1877F2] focus:bg-white"
@@ -446,7 +455,7 @@ export default function HeroCarFilter({ onSearch }) {
                                                 <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">৳</span>
                                                 <input
                                                     type="number"
-                                                    placeholder="Max Tk (e.g. 3500000)"
+                                                    placeholder="Max Tk"
                                                     value={customMax}
                                                     onChange={(e) => setCustomMax(e.target.value)}
                                                     className="w-full pl-6 pr-2 py-1.5 text-[12px] bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#1877F2] focus:bg-white"
@@ -459,7 +468,7 @@ export default function HeroCarFilter({ onSearch }) {
                                             </div>
                                             <button
                                                 type="submit"
-                                                className="px-4 py-1.5 bg-[#1877F2] text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition shadow-sm"
+                                                className="px-4 py-1.5 bg-[#1877F2] text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition shadow-sm cursor-pointer"
                                             >
                                                 Apply Range
                                             </button>
@@ -470,12 +479,12 @@ export default function HeroCarFilter({ onSearch }) {
                         )}
                     </div>
 
-                    {/* ═══ 4. CONDITION DROPDOWN (OPENS UPWARDS) ═══ */}
-                    <div className="relative flex-1 lg:px-4">
+                    {/* ═══ 4. CONDITION DROPDOWN ═══ */}
+                    <div className="relative flex-1 lg:px-3">
                         <button
                             type="button"
                             onClick={() => setOpenDropdown(openDropdown === 'condition' ? null : 'condition')}
-                            className={`w-full text-left p-2.5 rounded-xl transition-all flex items-center gap-3.5 ${openDropdown === 'condition' ? 'bg-blue-50/70 ring-2 ring-[#1877F2]/20' : 'hover:bg-gray-50/80'}`}
+                            className={`w-full text-left p-2.5 rounded-xl transition-all flex items-center gap-3 border border-gray-100 sm:border-transparent cursor-pointer ${openDropdown === 'condition' ? 'bg-blue-50/70 ring-2 ring-[#1877F2]/20 border-transparent' : 'bg-gray-50/50 sm:bg-transparent hover:bg-gray-50'}`}
                         >
                             {/* Icon */}
                             <div className="w-10 h-10 rounded-xl bg-[#EBF3FE] text-[#1877F2] flex items-center justify-center shrink-0">
@@ -498,9 +507,9 @@ export default function HeroCarFilter({ onSearch }) {
                             </svg>
                         </button>
 
-                        {/* Condition Popover - Opens UPWARDS */}
+                        {/* Condition Popover - Opens DOWNWARDS */}
                         {openDropdown === 'condition' && (
-                            <div className="absolute bottom-full right-0 lg:left-0 mb-3 w-[280px] sm:w-[320px] bg-white rounded-2xl shadow-[0_-12px_45px_rgba(0,0,0,0.18)] border border-gray-100 p-3 z-50 animate-in fade-in zoom-in-95 duration-150">
+                            <div className="absolute top-full left-0 right-0 sm:left-auto sm:right-0 lg:right-0 lg:left-auto sm:w-[280px] md:w-[320px] mt-2 bg-white rounded-2xl shadow-[0_16px_50px_rgba(0,0,0,0.18)] border border-gray-200 p-3 z-50 animate-in fade-in zoom-in-95 duration-150">
                                 <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 px-1">
                                     Vehicle Condition
                                 </div>
@@ -513,7 +522,7 @@ export default function HeroCarFilter({ onSearch }) {
                                                 setSelectedCondition(cond);
                                                 setOpenDropdown(null);
                                             }}
-                                            className={`w-full text-left px-3 py-2.5 rounded-xl transition-colors ${selectedCondition.id === cond.id ? 'bg-blue-50 text-[#1877F2]' : 'hover:bg-gray-50 text-gray-700'}`}
+                                            className={`w-full text-left px-3 py-2.5 rounded-xl transition-colors cursor-pointer ${selectedCondition.id === cond.id ? 'bg-blue-50 text-[#1877F2]' : 'hover:bg-gray-50 text-gray-700'}`}
                                         >
                                             <div className="flex items-center justify-between">
                                                 <span className="font-bold text-[13px]">{cond.label}</span>
@@ -532,23 +541,24 @@ export default function HeroCarFilter({ onSearch }) {
                     </div>
 
                     {/* ═══ 5. SEARCH & RESET BUTTONS ═══ */}
-                    <div className="flex items-center gap-2 pt-2 lg:pt-0 lg:pl-3">
+                    <div className="flex items-center gap-2 pt-2 sm:pt-0 sm:col-span-2 lg:col-span-auto lg:pl-3">
                         {hasActiveFilters && (
                             <button
                                 type="button"
                                 onClick={handleReset}
                                 title="Reset all filters"
-                                className="p-3 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors shrink-0"
+                                className="p-3 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors border border-gray-200 lg:border-none shrink-0 cursor-pointer flex items-center justify-center gap-1.5"
                             >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
                                 </svg>
+                                <span className="text-xs font-bold lg:hidden">Reset</span>
                             </button>
                         )}
                         <button
                             type="button"
                             onClick={handleSearchClick}
-                            className="w-full lg:w-auto bg-[#1877F2] hover:bg-blue-700 text-white px-8 py-3.5 rounded-xl font-bold text-[14px] transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 shrink-0 group active:scale-95 whitespace-nowrap"
+                            className="w-full lg:w-auto bg-[#1877F2] hover:bg-blue-700 text-white px-8 py-3.5 rounded-xl font-bold text-[14px] transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 shrink-0 group active:scale-95 whitespace-nowrap cursor-pointer"
                         >
                             <svg className="w-4 h-4 text-white/90 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />

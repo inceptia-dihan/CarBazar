@@ -79,4 +79,15 @@ class CarController extends Controller
             'canRegister' => Route::has('register'),
         ]);
     }
+
+    /**
+     * Display the How It Works / About page.
+     */
+    public function howItWorks(): Response
+    {
+        return Inertia::render('HowItWorks', [
+            'canLogin' => Route::has('login'),
+            'canRegister' => Route::has('register'),
+        ]);
+    }
 }

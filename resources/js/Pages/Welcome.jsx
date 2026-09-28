@@ -455,14 +455,10 @@ export default function Welcome({ auth, collectionCars: dbCollectionCars, popula
 
                 {/* ═══ HERO WRAPPER (Navbar + Hero combined) ═════════════════ */}
                 <div
-                    className="relative w-full"
-                    style={{
-                        background: '#f2f4f6',
-                        minHeight: '84vh',
-                    }}
+                    className="relative w-full bg-[#f2f4f6] lg:min-h-[84vh] flex flex-col justify-between"
                 >
-                    {/* ── Car Image — no container boundaries, blends into bg ── */}
-                    <div className="absolute inset-0 z-10 flex items-center justify-end pointer-events-none">
+                    {/* ── Car Image — hidden on mobile to prevent clashing with text, blends into bg on tablet/desktop ── */}
+                    <div className="absolute inset-0 z-10 hidden md:flex items-center justify-end pointer-events-none">
                         <img
                             src="/images/hero-car.png"
                             alt="SUV Car"
@@ -477,7 +473,7 @@ export default function Welcome({ auth, collectionCars: dbCollectionCars, popula
 
                     {/* ── Navbar ── */}
                     <nav className="relative z-40 w-full">
-                        <div className="w-full px-8 lg:px-16 flex items-center justify-between h-[70px]">
+                        <div className="w-full px-6 sm:px-8 lg:px-16 flex items-center justify-between h-[70px]">
                             {/* Logo */}
                             <div className="flex items-center gap-2">
                                 <div className="w-8 h-8 bg-[#1877F2] rounded-lg flex items-center justify-center">
@@ -491,9 +487,14 @@ export default function Welcome({ auth, collectionCars: dbCollectionCars, popula
                             {/* Nav Links */}
                             <div className="hidden lg:flex items-center gap-9 text-[14px] font-semibold text-gray-800">
                                 <Link href="/cars" className="hover:text-[#1877F2] transition-colors">Buy</Link>
-                                <a href="#how-it-works-section" className="hover:text-[#1877F2] transition-colors">Sell</a>
+                                <Link
+                                    href={auth?.user ? `${route('dashboard')}?action=sell` : `${route('login')}?role=seller`}
+                                    className="hover:text-[#1877F2] transition-colors"
+                                >
+                                    Sell
+                                </Link>
                                 <Link href="/cars" className="hover:text-[#1877F2] transition-colors">Hot Deals</Link>
-                                <a href="#how-it-works-section" className="hover:text-[#1877F2] transition-colors">How it works</a>
+                                <Link href="/how-it-works" className="hover:text-[#1877F2] transition-colors">How it works</Link>
                                 <a href="#why-choose-us-section" className="hover:text-[#1877F2] transition-colors">Why choose us</a>
                             </div>
 
@@ -525,7 +526,7 @@ export default function Welcome({ auth, collectionCars: dbCollectionCars, popula
                     </nav>
 
                     {/* ── Hero Text Content ── */}
-                    <div className="relative z-30 px-8 lg:px-16 pt-10 pb-32">
+                    <div className="relative z-30 px-6 sm:px-8 lg:px-16 pt-6 sm:pt-10 pb-6 sm:pb-8 lg:pb-28">
                         <div className="max-w-[500px]">
                             <h1 className="font-bold text-gray-900 leading-[1.1] tracking-tight">
                                 <span className="block text-[2rem] lg:text-[2.6rem]">Buy or Sell your</span>
@@ -573,7 +574,7 @@ export default function Welcome({ auth, collectionCars: dbCollectionCars, popula
                     </div>
 
                     {/* ── Search / Filter Bar (Brands, Model, Price Range, Condition) ── */}
-                    <div className="absolute -bottom-14 sm:-bottom-12 left-1/2 -translate-x-1/2 w-[95%] max-w-[1150px] z-40">
+                    <div className="relative mx-auto px-4 sm:px-6 lg:px-0 lg:absolute lg:-bottom-12 lg:left-1/2 lg:-translate-x-1/2 w-full lg:w-[95%] max-w-[1150px] z-40 pb-6 lg:pb-0">
                         <HeroCarFilter
                             onSearch={(filters) => {
                                 const params = {};
@@ -589,7 +590,7 @@ export default function Welcome({ auth, collectionCars: dbCollectionCars, popula
                 </div>
 
                 {/* ═══ FEATURED CARS FOR SALE ════════════════════════════════ */}
-                <section id="cars-section" className="bg-white pt-32 pb-4">
+                <section id="cars-section" className="bg-white pt-8 sm:pt-12 lg:pt-28 pb-4">
                     <div className="max-w-[1400px] mx-auto px-6 lg:px-10">
                         {/* Section Header */}
                         <div className="flex flex-col items-center justify-center text-center mb-12">
@@ -1595,7 +1596,14 @@ export default function Welcome({ auth, collectionCars: dbCollectionCars, popula
                                 <ul className="space-y-2.5 text-[13px] text-slate-300/90 font-normal">
                                     <li><a href="#cars-section" className="hover:text-white transition-colors">Certified Cars</a></li>
                                     <li><Link href="/cars" className="hover:text-white transition-colors">Brand New Cars</Link></li>
-                                    <li><a href="#how-it-works-section" className="hover:text-white transition-colors">Sell Your Car</a></li>
+                                    <li>
+                                        <Link
+                                            href={auth?.user ? `${route('dashboard')}?action=sell` : `${route('login')}?role=seller`}
+                                            className="hover:text-white transition-colors"
+                                        >
+                                            Sell Your Car
+                                        </Link>
+                                    </li>
                                     <li><a href="#why-choose-us-section" className="hover:text-white transition-colors">Inspection Reports</a></li>
                                 </ul>
                             </div>

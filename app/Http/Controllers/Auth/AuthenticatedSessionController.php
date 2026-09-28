@@ -37,6 +37,10 @@ class AuthenticatedSessionController extends Controller
             return redirect()->intended(route('admin.dashboard', absolute: false));
         }
 
+        if ($request->query('role') === 'seller' || $request->input('role') === 'seller') {
+            return redirect()->intended(route('dashboard', absolute: false).'?action=sell');
+        }
+
         return redirect()->intended(route('dashboard', absolute: false));
     }
 

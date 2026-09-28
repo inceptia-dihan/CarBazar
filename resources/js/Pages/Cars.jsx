@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Head, Link } from '@inertiajs/react';
-import HeroCarFilter from '@/Components/HeroCarFilter';
+import CarSidebarFilter from '@/Components/CarSidebarFilter';
 import { CAR_BRANDS } from '@/data/carBrandsModels';
 
 // ─── Slug to Full Selling Price Mapping (matching CarDetails page) ────────────
@@ -161,6 +161,7 @@ export default function Cars({ auth, collectionCars: dbCollectionCars, initialFi
     const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
 
     // Filters state
+    const [searchKeyword, setSearchKeyword] = useState(urlParams.get('q') || '');
     const [selectedBrand, setSelectedBrand] = useState(initialFilters.brand || urlParams.get('brand') || '');
     const [selectedModel, setSelectedModel] = useState(initialFilters.model || urlParams.get('model') || '');
     const [selectedBodyType, setSelectedBodyType] = useState(initialFilters.bodyType || urlParams.get('bodyType') || '');
@@ -168,6 +169,7 @@ export default function Cars({ auth, collectionCars: dbCollectionCars, initialFi
     const [minPrice, setMinPrice] = useState(initialFilters.minPrice || urlParams.get('minPrice') || null);
     const [maxPrice, setMaxPrice] = useState(initialFilters.maxPrice || urlParams.get('maxPrice') || null);
     const [activeCollectionTab, setActiveCollectionTab] = useState('All Cars');
+    const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
@@ -186,6 +188,18 @@ export default function Cars({ auth, collectionCars: dbCollectionCars, initialFi
     // Filter cars
     const filteredCars = useMemo(() => {
         let list = allCars;
+
+        // 0. Keyword search filter
+        if (searchKeyword && searchKeyword.trim()) {
+            const q = searchKeyword.toLowerCase().trim();
+            list = list.filter(car => {
+                const n = (car.name || '').toLowerCase();
+                const b = (car.brand || '').toLowerCase();
+                const m = (car.model || '').toLowerCase();
+                const t = (car.bodyType || car.body_type || '').toLowerCase();
+                return n.includes(q) || b.includes(q) || m.includes(q) || t.includes(q);
+            });
+        }
 
         // 1. Brand filter
         if (selectedBrand) {
@@ -235,8 +249,9 @@ export default function Cars({ auth, collectionCars: dbCollectionCars, initialFi
             list = list.filter(car => {
                 const c = (car.condition || '').toLowerCase();
                 const cat = (car.category || '').toLowerCase();
-                if (condNorm === 'vintage') return c.includes('vintage') || cat.includes('vintage') || (car.name || '').includes('1974');
-                if (condNorm === 'brand-new') return c.includes('new') || !car.user_id;
+                if (condNorm === 'vintage' || condNorm === 'classic') return c.includes('vintage') || c.includes('classic') || cat.includes('vintage') || (car.name || '').includes('1974');
+                if (condNorm === 'brand-new' || condNorm === 'new') return c.includes('new') || !car.user_id;
+                if (condNorm === 'cpo') return c.includes('certified') || c.includes('cpo') || Boolean(car.rating && Number(car.rating) >= 4.8);
                 if (condNorm === 'used' || condNorm === 'reconditioned') return c.includes(condNorm) || Boolean(car.user_id);
                 return true;
             });
@@ -296,7 +311,7 @@ export default function Cars({ auth, collectionCars: dbCollectionCars, initialFi
     // Reset page to 1 when filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [selectedBrand, selectedModel, selectedBodyType, selectedCondition, minPrice, maxPrice, activeCollectionTab]);
+    }, [searchKeyword, selectedBrand, selectedModel, selectedBodyType, selectedCondition, minPrice, maxPrice, activeCollectionTab]);
 
     // Total pages & Paginated slice
     const totalPages = Math.ceil(filteredCars.length / itemsPerPage) || 1;
@@ -316,6 +331,7 @@ export default function Cars({ auth, collectionCars: dbCollectionCars, initialFi
     };
 
     const handleClearAllFilters = () => {
+        setSearchKeyword('');
         setSelectedBrand('');
         setSelectedModel('');
         setSelectedBodyType('');
@@ -328,11 +344,11 @@ export default function Cars({ auth, collectionCars: dbCollectionCars, initialFi
         } catch (e) {}
     };
 
-    const hasActiveFilters = Boolean(selectedBrand || selectedModel || selectedBodyType || (selectedCondition && selectedCondition !== 'all') || minPrice || maxPrice || activeCollectionTab !== 'All Cars');
+    const hasActiveFilters = Boolean(searchKeyword || selectedBrand || selectedModel || selectedBodyType || (selectedCondition && selectedCondition !== 'all') || minPrice || maxPrice || activeCollectionTab !== 'All Cars');
 
     return (
         <>
-            <Head title="Our Impressive Collection of Cars - CarBazar" />
+            <Head title="Cars Collection - CarBazar" />
 
             <div className="min-h-screen bg-[#F0F4F8] font-sans flex flex-col justify-between">
                 <div>
@@ -353,7 +369,13 @@ export default function Cars({ auth, collectionCars: dbCollectionCars, initialFi
                             <nav className="hidden lg:flex items-center gap-9 text-[14px] font-semibold text-gray-800">
                                 <Link href="/" className="hover:text-[#1877F2] transition-colors">Home</Link>
                                 <Link href="/cars" className="text-[#1877F2] font-bold">All Cars</Link>
-                                <Link href="/#how-it-works-section" className="hover:text-[#1877F2] transition-colors">How it works</Link>
+                                <Link
+                                    href={auth?.user ? `${route('dashboard')}?action=sell` : `${route('login')}?role=seller`}
+                                    className="hover:text-[#1877F2] transition-colors"
+                                >
+                                    Sell
+                                </Link>
+                                <Link href="/how-it-works" className="hover:text-[#1877F2] transition-colors">How it works</Link>
                                 <Link href="/#why-choose-us-section" className="hover:text-[#1877F2] transition-colors">Why choose us</Link>
                             </nav>
 
@@ -384,230 +406,306 @@ export default function Cars({ auth, collectionCars: dbCollectionCars, initialFi
                         </div>
                     </header>
 
-                    {/* ═══ HERO / SEARCH FILTER SECTION ══════════════════════════ */}
-                    <div className="bg-[#E6EEF6] pt-10 pb-16 border-b border-blue-100/60 relative">
-                        <div className="max-w-[1240px] mx-auto px-6 lg:px-8">
-                            {/* Breadcrumb & Heading */}
-                            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
-                                <div>
-                                    <div className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                                        <Link href="/" className="hover:text-[#1877F2] transition-colors">Home</Link>
-                                        <span>/</span>
-                                        <span className="text-[#1877F2]">Cars Collection</span>
+                    {/* ═══ MAIN LAYOUT: FULL-LEFT SIDEBAR & RIGHT CONTENT ═════════════ */}
+                    <div className="flex-1 flex flex-col lg:flex-row w-full min-h-[calc(100vh-70px)]">
+
+                        {/* ═══ DESKTOP STICKY LEFT SIDEBAR (Starts directly under header, full height, flush to left screen edge) ═══ */}
+                        <aside className="hidden lg:block w-[290px] xl:w-[320px] 2xl:w-[340px] shrink-0 bg-white border-r border-gray-200 sticky top-[70px] h-[calc(100vh-70px)] z-30 shadow-[2px_0_8px_rgba(0,0,0,0.02)]">
+                            <CarSidebarFilter
+                                selectedBrand={selectedBrand}
+                                setSelectedBrand={setSelectedBrand}
+                                selectedModel={selectedModel}
+                                setSelectedModel={setSelectedModel}
+                                selectedBodyType={selectedBodyType}
+                                setSelectedBodyType={setSelectedBodyType}
+                                selectedCondition={selectedCondition}
+                                setSelectedCondition={setSelectedCondition}
+                                minPrice={minPrice}
+                                setMinPrice={setMinPrice}
+                                maxPrice={maxPrice}
+                                setMaxPrice={setMaxPrice}
+                                onResetAll={handleClearAllFilters}
+                                filteredCount={filteredCars.length}
+                                totalCount={allCars.length}
+                                searchKeyword={searchKeyword}
+                                setSearchKeyword={setSearchKeyword}
+                            />
+                        </aside>
+
+                        {/* ═══ RIGHT COLUMN: BANNER + TOOLBAR + CARS GRID + PAGINATION ═══ */}
+                        <div className="flex-1 min-w-0 flex flex-col bg-[#F0F4F8]">
+
+                            {/* ═══ TOP BAR (inside right column) ═════════ */}
+                            <div className="bg-gradient-to-b from-[#E6EEF6] to-[#F0F4F8] px-5 sm:px-8 lg:px-10 py-5 border-b border-blue-100/70">
+                                <div className="flex items-center justify-between gap-4">
+                                    <div>
+                                        <div className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
+                                            <Link href="/" className="hover:text-[#1877F2] transition-colors">Home</Link>
+                                            <span>/</span>
+                                            <span className="text-[#1877F2]">Cars Collection</span>
+                                        </div>
+                                        <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2.5">
+                                            <span>{filteredCars.length} {filteredCars.length === 1 ? 'Car Available' : 'Cars Available'}</span>
+                                            {hasActiveFilters && filteredCars.length !== allCars.length && (
+                                                <span className="text-xs font-semibold text-gray-500 bg-white/80 border border-blue-100 px-2.5 py-0.5 rounded-full">
+                                                    (of {allCars.length} total)
+                                                </span>
+                                            )}
+                                        </h1>
                                     </div>
-                                    <h1 className="text-3xl lg:text-4xl font-extrabold text-gray-900 tracking-tight">
-                                        Explore Vehicles For Sale
-                                    </h1>
-                                    <p className="text-gray-600 text-sm mt-1.5 max-w-xl">
-                                        Find verified used and brand new cars with authentic inspection reports, verified seller profiles, and best market pricing in Bangladesh.
-                                    </p>
-                                </div>
-                                <div className="text-right shrink-0">
-                                    <span className="inline-block bg-white text-[#1877F2] border border-blue-200/80 px-4 py-2 rounded-xl text-xs font-bold shadow-sm">
-                                        {filteredCars.length} {filteredCars.length === 1 ? 'Car Available' : 'Cars Available'}
-                                    </span>
+
+                                    {/* Mobile Filter Trigger Button */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setMobileFilterOpen(true)}
+                                        className="lg:hidden flex items-center gap-2 bg-[#1877F2] hover:bg-blue-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm transition-all cursor-pointer shrink-0"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                                        </svg>
+                                        <span>Filter Cars</span>
+                                        {hasActiveFilters && (
+                                            <span className="w-2 h-2 rounded-full bg-yellow-300 animate-pulse"></span>
+                                        )}
+                                    </button>
                                 </div>
                             </div>
 
-                            {/* Integrated Hero Filter */}
-                            <div className="w-full">
-                                <HeroCarFilter
-                                    onSearch={(filters) => {
-                                        if (filters?.brand) setSelectedBrand(filters.brand);
-                                        if (filters?.model) setSelectedModel(filters.model);
-                                        if (filters?.condition?.id) setSelectedCondition(filters.condition.id);
-                                        if (filters?.price?.min !== undefined) setMinPrice(filters.price.min);
-                                        if (filters?.price?.max !== undefined) setMaxPrice(filters.price.max);
-                                    }}
-                                />
-                            </div>
+                            {/* ═══ SECTION: CARS COLLECTION (TABS, CHIPS, CAR GRID) ═════ */}
+                            <main id="cars-collection-top" className="flex-1 px-5 sm:px-8 lg:px-10 py-6 pb-20 scroll-mt-20">
+                                {/* Toolbar & Category Tabs */}
+                                <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        {collectionTabs.map((tab) => {
+                                            const isActive = activeCollectionTab === tab;
+                                            return (
+                                                <button
+                                                    key={tab}
+                                                    type="button"
+                                                    onClick={() => setActiveCollectionTab(tab)}
+                                                    className={`px-4 py-2 rounded-full font-bold text-xs transition-all duration-200 shadow-sm cursor-pointer ${
+                                                        isActive
+                                                            ? 'bg-[#151515] text-white shadow-md ring-2 ring-[#151515]/20'
+                                                            : 'bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900 border border-gray-200 hover:shadow'
+                                                    }`}
+                                                >
+                                                    {tab}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Mobile Filter Button Inline */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setMobileFilterOpen(true)}
+                                        className="lg:hidden flex items-center gap-1.5 text-xs font-bold text-[#1877F2] bg-white border border-blue-200 px-3 py-1.5 rounded-xl shadow-sm ml-auto cursor-pointer"
+                                    >
+                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                                        </svg>
+                                        <span>Filters {hasActiveFilters && '•'}</span>
+                                    </button>
+                                </div>
+
+                                {/* Active Filter Chips Banner */}
+                                {hasActiveFilters && (
+                                    <div className="flex flex-wrap items-center justify-between gap-3 bg-white border border-blue-200/80 rounded-2xl px-5 py-3 mb-6 shadow-sm">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="w-2.5 h-2.5 rounded-full bg-[#1877F2] animate-pulse"></span>
+                                            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider mr-1">
+                                                Filters:
+                                            </span>
+
+                                            {searchKeyword && (
+                                                <span className="bg-[#1877F2] text-white font-bold text-xs px-3 py-1 rounded-full shadow-sm flex items-center gap-1.5">
+                                                    <span>Search: "{searchKeyword}"</span>
+                                                    <button type="button" onClick={() => setSearchKeyword('')} className="hover:text-red-200 cursor-pointer">✕</button>
+                                                </span>
+                                            )}
+
+                                            {selectedBrand && (
+                                                <span className="bg-[#1877F2] text-white font-bold text-xs px-3 py-1 rounded-full shadow-sm flex items-center gap-1.5">
+                                                    <span>Brand: {selectedBrand}</span>
+                                                    <button type="button" onClick={() => setSelectedBrand('')} className="hover:text-red-200 cursor-pointer">✕</button>
+                                                </span>
+                                            )}
+
+                                            {selectedModel && (
+                                                <span className="bg-[#1877F2] text-white font-bold text-xs px-3 py-1 rounded-full shadow-sm flex items-center gap-1.5">
+                                                    <span>Model: {selectedModel}</span>
+                                                    <button type="button" onClick={() => setSelectedModel('')} className="hover:text-red-200 cursor-pointer">✕</button>
+                                                </span>
+                                            )}
+
+                                            {selectedBodyType && (
+                                                <span className="bg-[#1877F2] text-white font-bold text-xs px-3 py-1 rounded-full shadow-sm flex items-center gap-1.5">
+                                                    <span>Type: {selectedBodyType}</span>
+                                                    <button type="button" onClick={() => setSelectedBodyType('')} className="hover:text-red-200 cursor-pointer">✕</button>
+                                                </span>
+                                            )}
+
+                                            {selectedCondition && selectedCondition !== 'all' && (
+                                                <span className="bg-[#1877F2] text-white font-bold text-xs px-3 py-1 rounded-full shadow-sm flex items-center gap-1.5">
+                                                    <span>Condition: {selectedCondition}</span>
+                                                    <button type="button" onClick={() => setSelectedCondition('all')} className="hover:text-red-200 cursor-pointer">✕</button>
+                                                </span>
+                                            )}
+
+                                            {(minPrice || maxPrice) && (
+                                                <span className="bg-[#1877F2] text-white font-bold text-xs px-3 py-1 rounded-full shadow-sm flex items-center gap-1.5">
+                                                    <span>Price Filtered</span>
+                                                    <button type="button" onClick={() => { setMinPrice(null); setMaxPrice(null); }} className="hover:text-red-200 cursor-pointer">✕</button>
+                                                </span>
+                                            )}
+
+                                            {activeCollectionTab !== 'All Cars' && (
+                                                <span className="bg-slate-800 text-white font-bold text-xs px-3 py-1 rounded-full shadow-sm flex items-center gap-1.5">
+                                                    <span>{activeCollectionTab}</span>
+                                                    <button type="button" onClick={() => setActiveCollectionTab('All Cars')} className="hover:text-red-200 cursor-pointer">✕</button>
+                                                </span>
+                                            )}
+
+                                            <span className="text-xs text-gray-500 font-medium ml-1">
+                                                ({filteredCars.length} {filteredCars.length === 1 ? 'vehicle' : 'vehicles'} found)
+                                            </span>
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            onClick={handleClearAllFilters}
+                                            className="text-xs font-bold text-[#1877F2] hover:text-blue-800 flex items-center gap-1 hover:underline cursor-pointer ml-auto"
+                                        >
+                                            <span>Clear all filters</span>
+                                            <span>✕</span>
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Car Grid or Empty State */}
+                                {paginatedCars.length > 0 ? (
+                                    <>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5 transition-all duration-300">
+                                            {paginatedCars.map((car, i) => (
+                                                <CarCard key={car.id || car.slug || i} {...car} />
+                                            ))}
+                                        </div>
+
+                                        {/* ═══ PAGINATION SYSTEM ═══ */}
+                                        {totalPages > 1 && (
+                                            <div className="mt-14 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-200/80 pt-8">
+                                                <div className="text-xs font-semibold text-gray-500">
+                                                    Showing <span className="font-bold text-gray-800">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-bold text-gray-800">{Math.min(currentPage * itemsPerPage, filteredCars.length)}</span> of <span className="font-bold text-gray-800">{filteredCars.length}</span> cars
+                                                </div>
+
+                                                <div className="flex items-center gap-1.5">
+                                                    {/* Previous button */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handlePageChange(currentPage - 1)}
+                                                        disabled={currentPage === 1}
+                                                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                                                            currentPage === 1
+                                                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200/60'
+                                                                : 'bg-white text-gray-700 hover:bg-[#1877F2] hover:text-white border border-gray-200 shadow-sm hover:shadow'
+                                                        }`}
+                                                    >
+                                                        <span>←</span>
+                                                        <span>Previous</span>
+                                                    </button>
+
+                                                    {/* Page numbers */}
+                                                    {Array.from({ length: totalPages }).map((_, idx) => {
+                                                        const pageNum = idx + 1;
+                                                        const isActive = currentPage === pageNum;
+                                                        return (
+                                                            <button
+                                                                key={pageNum}
+                                                                type="button"
+                                                                onClick={() => handlePageChange(pageNum)}
+                                                                className={`w-9 h-9 rounded-xl text-xs font-bold transition-all shadow-sm ${
+                                                                    isActive
+                                                                        ? 'bg-[#1877F2] text-white shadow-md scale-105 ring-2 ring-[#1877F2]/20'
+                                                                        : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                                                                }`}
+                                                            >
+                                                                {pageNum}
+                                                            </button>
+                                                        );
+                                                    })}
+
+                                                    {/* Next button */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handlePageChange(currentPage + 1)}
+                                                        disabled={currentPage === totalPages}
+                                                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                                                            currentPage === totalPages
+                                                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200/60'
+                                                                : 'bg-white text-gray-700 hover:bg-[#1877F2] hover:text-white border border-gray-200 shadow-sm hover:shadow'
+                                                        }`}
+                                                    >
+                                                        <span>Next</span>
+                                                        <span>→</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <div className="py-16 px-6 bg-white rounded-3xl border border-gray-200 text-center shadow-sm max-w-lg mx-auto">
+                                        <div className="w-16 h-16 bg-blue-50 text-[#1877F2] rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                                            🔍
+                                        </div>
+                                        <h3 className="text-lg font-bold text-gray-900 mb-1">No matching cars found</h3>
+                                        <p className="text-gray-500 text-sm max-w-md mx-auto mb-6">
+                                            We couldn't find any vehicles matching your current filter criteria. Try adjusting or clearing your filters to explore our full garage.
+                                        </p>
+                                        <button
+                                            type="button"
+                                            onClick={handleClearAllFilters}
+                                            className="bg-[#1877F2] hover:bg-blue-700 text-white font-bold text-xs px-6 py-2.5 rounded-xl transition-colors shadow-md cursor-pointer"
+                                        >
+                                            Show All Vehicles
+                                        </button>
+                                    </div>
+                                )}
+
+                            </main>
                         </div>
                     </div>
 
-                    {/* ═══ SECTION: OUR IMPRESSIVE COLLECTION OF CARS ════════════ */}
-                    <main id="cars-collection-top" className="max-w-[1240px] mx-auto px-6 lg:px-8 pt-12 pb-24 scroll-mt-20">
-
-                        {/* Section Header */}
-                        <div className="text-center mb-10">
-                            <h2 className="text-[2.2rem] font-bold text-gray-900 mb-3 tracking-tight">
-                                Our Impressive Collection of Cars
-                            </h2>
-                            <p className="text-gray-700 font-semibold text-[13px] max-w-2xl mx-auto leading-relaxed">
-                                Ranging from elegant sedans to powerful sports cars, all carefully selected to provide<br className="hidden md:block" /> our customers with the ultimate driving experience.
-                            </p>
-                        </div>
-
-                        {/* Active Filter Chips Banner */}
-                        {hasActiveFilters && (
-                            <div className="flex flex-wrap items-center justify-between gap-3 bg-white border border-blue-200/80 rounded-2xl px-6 py-3.5 mb-8 shadow-sm">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="w-2.5 h-2.5 rounded-full bg-[#1877F2] animate-pulse"></span>
-                                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider mr-1">
-                                        Filters:
-                                    </span>
-
-                                    {selectedBrand && (
-                                        <span className="bg-[#1877F2] text-white font-bold text-xs px-3 py-1 rounded-full shadow-sm flex items-center gap-1.5">
-                                            <span>Brand: {selectedBrand}</span>
-                                            <button type="button" onClick={() => setSelectedBrand('')} className="hover:text-red-200">✕</button>
-                                        </span>
-                                    )}
-
-                                    {selectedModel && (
-                                        <span className="bg-[#1877F2] text-white font-bold text-xs px-3 py-1 rounded-full shadow-sm flex items-center gap-1.5">
-                                            <span>Model: {selectedModel}</span>
-                                            <button type="button" onClick={() => setSelectedModel('')} className="hover:text-red-200">✕</button>
-                                        </span>
-                                    )}
-
-                                    {selectedBodyType && (
-                                        <span className="bg-[#1877F2] text-white font-bold text-xs px-3 py-1 rounded-full shadow-sm flex items-center gap-1.5">
-                                            <span>Type: {selectedBodyType}</span>
-                                            <button type="button" onClick={() => setSelectedBodyType('')} className="hover:text-red-200">✕</button>
-                                        </span>
-                                    )}
-
-                                    {selectedCondition && selectedCondition !== 'all' && (
-                                        <span className="bg-[#1877F2] text-white font-bold text-xs px-3 py-1 rounded-full shadow-sm flex items-center gap-1.5">
-                                            <span>Condition: {selectedCondition}</span>
-                                            <button type="button" onClick={() => setSelectedCondition('all')} className="hover:text-red-200">✕</button>
-                                        </span>
-                                    )}
-
-                                    {activeCollectionTab !== 'All Cars' && (
-                                        <span className="bg-slate-800 text-white font-bold text-xs px-3 py-1 rounded-full shadow-sm flex items-center gap-1.5">
-                                            <span>{activeCollectionTab}</span>
-                                            <button type="button" onClick={() => setActiveCollectionTab('All Cars')} className="hover:text-red-200">✕</button>
-                                        </span>
-                                    )}
-
-                                    <span className="text-xs text-gray-500 font-medium ml-2">
-                                        ({filteredCars.length} {filteredCars.length === 1 ? 'vehicle' : 'vehicles'} found)
-                                    </span>
-                                </div>
-
-                                <button
-                                    type="button"
-                                    onClick={handleClearAllFilters}
-                                    className="text-xs font-bold text-[#1877F2] hover:text-blue-800 flex items-center gap-1 hover:underline cursor-pointer ml-auto"
-                                >
-                                    <span>Clear all filters</span>
-                                    <span>✕</span>
-                                </button>
+                    {/* ═══ MOBILE SLIDE-OVER FILTER DRAWER ═══ */}
+                    {mobileFilterOpen && (
+                        <div className="fixed inset-0 z-50 lg:hidden flex">
+                            <div
+                                className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+                                onClick={() => setMobileFilterOpen(false)}
+                            />
+                            <div className="relative w-full max-w-xs sm:max-w-sm bg-white h-full shadow-2xl z-10 overflow-y-auto">
+                                <CarSidebarFilter
+                                    selectedBrand={selectedBrand}
+                                    setSelectedBrand={setSelectedBrand}
+                                    selectedModel={selectedModel}
+                                    setSelectedModel={setSelectedModel}
+                                    selectedBodyType={selectedBodyType}
+                                    setSelectedBodyType={setSelectedBodyType}
+                                    selectedCondition={selectedCondition}
+                                    setSelectedCondition={setSelectedCondition}
+                                    minPrice={minPrice}
+                                    setMinPrice={setMinPrice}
+                                    maxPrice={maxPrice}
+                                    setMaxPrice={setMaxPrice}
+                                    onResetAll={handleClearAllFilters}
+                                    filteredCount={filteredCars.length}
+                                    totalCount={allCars.length}
+                                    searchKeyword={searchKeyword}
+                                    setSearchKeyword={setSearchKeyword}
+                                    onCloseMobile={() => setMobileFilterOpen(false)}
+                                />
                             </div>
-                        )}
-
-                        {/* Category Tabs / Pills */}
-                        <div className="flex flex-wrap items-center justify-center gap-3 mb-10">
-                            {collectionTabs.map((tab) => {
-                                const isActive = activeCollectionTab === tab;
-                                return (
-                                    <button
-                                        key={tab}
-                                        type="button"
-                                        onClick={() => {
-                                            setActiveCollectionTab(tab);
-                                        }}
-                                        className={`px-6 py-2.5 rounded-full font-bold text-[13px] transition-all duration-200 shadow-sm cursor-pointer ${isActive
-                                            ? 'bg-[#151515] text-white shadow-md scale-105 ring-2 ring-[#151515]/20'
-                                            : 'bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900 border border-gray-200 hover:shadow'
-                                            }`}
-                                    >
-                                        {tab}
-                                    </button>
-                                );
-                            })}
                         </div>
-
-                        {/* Car Grid or Empty State */}
-                        {paginatedCars.length > 0 ? (
-                            <>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-5 transition-all duration-300">
-                                    {paginatedCars.map((car, i) => (
-                                        <CarCard key={car.id || car.slug || i} {...car} />
-                                    ))}
-                                </div>
-
-                                {/* ═══ PAGINATION SYSTEM ═══ */}
-                                {totalPages > 1 && (
-                                    <div className="mt-14 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-200/80 pt-8">
-                                        <div className="text-xs font-semibold text-gray-500">
-                                            Showing <span className="font-bold text-gray-800">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-bold text-gray-800">{Math.min(currentPage * itemsPerPage, filteredCars.length)}</span> of <span className="font-bold text-gray-800">{filteredCars.length}</span> cars
-                                        </div>
-
-                                        <div className="flex items-center gap-1.5">
-                                            {/* Previous button */}
-                                            <button
-                                                type="button"
-                                                onClick={() => handlePageChange(currentPage - 1)}
-                                                disabled={currentPage === 1}
-                                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                                                    currentPage === 1
-                                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200/60'
-                                                        : 'bg-white text-gray-700 hover:bg-[#1877F2] hover:text-white border border-gray-200 shadow-sm hover:shadow'
-                                                }`}
-                                            >
-                                                <span>←</span>
-                                                <span>Previous</span>
-                                            </button>
-
-                                            {/* Page numbers */}
-                                            {Array.from({ length: totalPages }).map((_, idx) => {
-                                                const pageNum = idx + 1;
-                                                const isActive = currentPage === pageNum;
-                                                return (
-                                                    <button
-                                                        key={pageNum}
-                                                        type="button"
-                                                        onClick={() => handlePageChange(pageNum)}
-                                                        className={`w-9 h-9 rounded-xl text-xs font-bold transition-all shadow-sm ${
-                                                            isActive
-                                                                ? 'bg-[#1877F2] text-white shadow-md scale-105 ring-2 ring-[#1877F2]/20'
-                                                                : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
-                                                        }`}
-                                                    >
-                                                        {pageNum}
-                                                    </button>
-                                                );
-                                            })}
-
-                                            {/* Next button */}
-                                            <button
-                                                type="button"
-                                                onClick={() => handlePageChange(currentPage + 1)}
-                                                disabled={currentPage === totalPages}
-                                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                                                    currentPage === totalPages
-                                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200/60'
-                                                        : 'bg-white text-gray-700 hover:bg-[#1877F2] hover:text-white border border-gray-200 shadow-sm hover:shadow'
-                                                }`}
-                                            >
-                                                <span>Next</span>
-                                                <span>→</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-                            </>
-                        ) : (
-                            <div className="py-16 px-6 bg-white rounded-3xl border border-gray-200 text-center shadow-sm max-w-lg mx-auto">
-                                <div className="w-16 h-16 bg-blue-50 text-[#1877F2] rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
-                                    🔍
-                                </div>
-                                <h3 className="text-lg font-bold text-gray-900 mb-1">No matching cars found</h3>
-                                <p className="text-gray-500 text-sm max-w-md mx-auto mb-6">
-                                    We couldn't find any vehicles matching your current filter criteria. Try adjusting or clearing your filters to explore our full garage.
-                                </p>
-                                <button
-                                    type="button"
-                                    onClick={handleClearAllFilters}
-                                    className="bg-[#1877F2] hover:bg-blue-700 text-white font-bold text-xs px-6 py-2.5 rounded-xl transition-colors shadow-md"
-                                >
-                                    Show All Vehicles
-                                </button>
-                            </div>
-                        )}
-                    </main>
+                    )}
                 </div>
 
                 {/* ═══ FOOTER (Consistent with Home Page) ══════════════════════ */}

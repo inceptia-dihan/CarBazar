@@ -68,6 +68,14 @@ export default function Dashboard({
         }
     }, [flash]);
 
+    // Auto open sell car modal if navigated with ?action=sell
+    useEffect(() => {
+        const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
+        if (urlParams.get('action') === 'sell') {
+            setIsPostModalOpen(true);
+        }
+    }, []);
+
     const showToast = (msg) => {
         setToastMessage(msg);
         setTimeout(() => setToastMessage(null), 3500);
@@ -212,7 +220,7 @@ export default function Dashboard({
                                 Sell a Car
                             </button>
                             <Link href="/#impressive-collection-section" className="hover:text-[#1877F2] transition-colors">Hot Deals</Link>
-                            <Link href="/#how-it-works-section" className="hover:text-[#1877F2] transition-colors">How it works</Link>
+                            <Link href="/how-it-works" className="hover:text-[#1877F2] transition-colors">How it works</Link>
                             <Link href="/#why-choose-us-section" className="hover:text-[#1877F2] transition-colors">Why choose us</Link>
                         </nav>
 
