@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import Footer from '@/Components/Footer';
 
 export default function Dashboard({
     auth,
@@ -1456,60 +1457,9 @@ export default function Dashboard({
                     </div>
                 )}
 
-                {/* ═══ FOOTER (Matches CarBazar Design Language) ══════════════ */}
-                <footer className="bg-[#0f172a] text-white border-t border-gray-800 mt-16">
-                    <div className="max-w-[1400px] mx-auto px-6 lg:px-12 py-12">
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-                            <div className="space-y-3">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 bg-[#1877F2] rounded-lg flex items-center justify-center shadow-sm">
-                                        <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z" />
-                                        </svg>
-                                    </div>
-                                    <span className="text-white font-black text-[20px] tracking-tight">CarBazar</span>
-                                </div>
-                                <p className="text-xs text-gray-400 leading-relaxed">
-                                    Bangladesh's premier online car buying & selling marketplace. Verified listings, transparent deals, and trusted automotive partnerships.
-                                </p>
-                            </div>
+                {/* ═══ FOOTER ══════════════════════════════════════════════════ */}
+                <Footer user={user} />
 
-                            <div>
-                                <h4 className="font-bold text-xs uppercase tracking-wider text-gray-300 mb-3">Quick Navigation</h4>
-                                <ul className="space-y-2 text-xs text-gray-400">
-                                    <li><Link href="/" className="hover:text-white transition-colors">Home</Link></li>
-                                    <li><Link href="/#impressive-collection-section" className="hover:text-white transition-colors">Browse Cars</Link></li>
-                                    <li><Link href="/#how-it-works-section" className="hover:text-white transition-colors">How It Works</Link></li>
-                                    <li><Link href="/#why-choose-us-section" className="hover:text-white transition-colors">Why Choose Us</Link></li>
-                                </ul>
-                            </div>
-
-                            <div>
-                                <h4 className="font-bold text-xs uppercase tracking-wider text-gray-300 mb-3">Seller Services</h4>
-                                <ul className="space-y-2 text-xs text-gray-400">
-                                    <li><button type="button" onClick={() => setIsPostModalOpen(true)} className="hover:text-white transition-colors cursor-pointer">Post Free Car Ad</button></li>
-                                    <li><span className="hover:text-white transition-colors cursor-pointer">Verified Inspection</span></li>
-                                    <li><span className="hover:text-white transition-colors cursor-pointer">Market Valuation</span></li>
-                                    <li><span className="hover:text-white transition-colors cursor-pointer">Instant Cash Offer</span></li>
-                                </ul>
-                            </div>
-
-                            <div>
-                                <h4 className="font-bold text-xs uppercase tracking-wider text-gray-300 mb-3">Customer Support</h4>
-                                <ul className="space-y-2 text-xs text-gray-400">
-                                    <li><span>📍 Gulshan-2, Dhaka-1212</span></li>
-                                    <li><span>📞 +880 9612-CARBAZAR</span></li>
-                                    <li><span>✉️ support@carbazar.com</span></li>
-                                    <li><span className="text-emerald-400 font-semibold">24/7 Helpline Available</span></li>
-                                </ul>
-                            </div>
-                        </div>
-
-                        <div className="pt-6 border-t border-gray-800 text-center text-xs text-gray-500">
-                            © {new Date().getFullYear()} CarBazar. All rights reserved. Exclusively for Buying and Selling Cars.
-                        </div>
-                    </div>
-                </footer>
 
             </div>
         </>

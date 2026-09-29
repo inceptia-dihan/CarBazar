@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Head, Link } from '@inertiajs/react';
+import Footer from '@/Components/Footer';
 import { getCarBySlug, CARS_DATA, DEFAULT_CAR_SLUG } from '@/data/carsData';
 
 export default function CarDetails({ auth, slug, car: dbCar, recommendedCars = [] }) {
@@ -865,95 +866,9 @@ export default function CarDetails({ auth, slug, car: dbCar, recommendedCars = [
 
                 </main>
 
-                {/* ═══ FOOTER (Matches CarBazar Home Page Exactly) ════════════ */}
-                <footer className="bg-[#051C34] text-white pt-16 pb-8 border-t border-[#0e2c4d]">
-                    <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
-                        <div className="flex flex-col lg:flex-row justify-between gap-10 pb-16">
-                            {/* Column 1: Brand info */}
-                            <div className="max-w-[280px]">
-                                <Link href="/" className="flex items-center gap-2 mb-5">
-                                    <div className="w-8 h-8 bg-[#1877F2] rounded-lg flex items-center justify-center">
-                                        <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z" />
-                                        </svg>
-                                    </div>
-                                    <span className="text-white font-black text-[20px] tracking-tight">CarBazar</span>
-                                </Link>
+                {/* ═══ FOOTER ════════════════════════════════════════════════ */}
+                <Footer user={auth?.user} />
 
-                                <div className="space-y-2 text-[13px] text-slate-300/90 font-normal">
-                                    <div className="flex items-start gap-2.5">
-                                        <svg className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                        <span>Dhaka, Bangladesh</span>
-                                    </div>
-                                    <div className="flex items-center gap-2.5">
-                                        <svg className="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-                                        <span>+880 1712-345678</span>
-                                    </div>
-                                    <div className="flex items-center gap-2.5">
-                                        <svg className="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                                        <span>support@carbazar.com</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Column 2: Our Product */}
-                            <div className="min-w-[120px]">
-                                <h4 className="text-white font-medium text-[15px] mb-4">Our Product</h4>
-                                <ul className="space-y-2.5 text-[13px] text-slate-300/90 font-normal">
-                                    <li><Link href="/" className="hover:text-white transition-colors">Career</Link></li>
-                                    <li><Link href="/" className="hover:text-white transition-colors">Car</Link></li>
-                                    <li><Link href="/" className="hover:text-white transition-colors">Packages</Link></li>
-                                    <li><Link href="/" className="hover:text-white transition-colors">Features</Link></li>
-                                </ul>
-                            </div>
-
-                            {/* Column 3: Resources */}
-                            <div className="min-w-[120px]">
-                                <h4 className="text-white font-medium text-[15px] mb-4">Resources</h4>
-                                <ul className="space-y-2.5 text-[13px] text-slate-300/90 font-normal">
-                                    <li><Link href="/" className="hover:text-white transition-colors">Download</Link></li>
-                                    <li><Link href="/" className="hover:text-white transition-colors">Help Centre</Link></li>
-                                    <li><Link href="/" className="hover:text-white transition-colors">Guides</Link></li>
-                                    <li><Link href="/" className="hover:text-white transition-colors">Cruises</Link></li>
-                                </ul>
-                            </div>
-
-                            {/* Column 4: About CarBazar */}
-                            <div className="min-w-[130px]">
-                                <h4 className="text-white font-medium text-[15px] mb-4">About CarBazar</h4>
-                                <ul className="space-y-2.5 text-[13px] text-slate-300/90 font-normal">
-                                    <li><Link href="/" className="hover:text-white transition-colors">Why choose us</Link></li>
-                                    <li><Link href="/" className="hover:text-white transition-colors">Our Story</Link></li>
-                                    <li><Link href="/" className="hover:text-white transition-colors">Press Center</Link></li>
-                                    <li><Link href="/" className="hover:text-white transition-colors">Advertise</Link></li>
-                                </ul>
-                            </div>
-
-                            {/* Column 5: Follow Us */}
-                            <div className="min-w-[120px]">
-                                <h4 className="text-white font-medium text-[15px] mb-4">Follow Us</h4>
-                                <div className="flex items-center gap-3 text-slate-300">
-                                    <a href="#" className="w-7 h-7 rounded-[7px] border border-slate-400/70 hover:border-white hover:text-white flex items-center justify-center transition-colors">
-                                        <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M14 13.5h2.5l1-4H14v-2c0-1.03.7-1.5 1.5-1.5H18V2.3c-.6-.08-1.5-.15-2.6-.15-2.7 0-4.4 1.6-4.4 4.6v2.75H8v4h3V22h3v-8.5z" /></svg>
-                                    </a>
-                                    <a href="#" className="w-7 h-7 rounded-[7px] border border-slate-400/70 hover:border-white hover:text-white flex items-center justify-center transition-colors">
-                                        <svg className="w-3.5 h-3.5 fill-none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5" /><circle cx="12" cy="12" r="4" /><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" strokeLinecap="round" /></svg>
-                                    </a>
-                                    <a href="#" className="w-7 h-7 rounded-[7px] border border-slate-400/70 hover:border-white hover:text-white flex items-center justify-center transition-colors">
-                                        <svg className="w-3.5 h-3.5 fill-none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="4" ry="4" /><polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none" /></svg>
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Bottom Copyright */}
-                        <div className="border-t border-[#0e2c4d] pt-8 text-center w-full">
-                            <p className="text-slate-300/80 text-[13px] font-normal tracking-wide">
-                                Copyright 2024 • CarBazar, All Rights Reserved
-                            </p>
-                        </div>
-                    </div>
-                </footer>
             </div>
         </>
     );

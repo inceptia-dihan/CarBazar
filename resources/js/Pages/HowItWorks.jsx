@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
+import Footer from '@/Components/Footer';
 
 export default function HowItWorks({ auth }) {
     const [activeWorkflow, setActiveWorkflow] = useState('buyers'); // 'buyers' | 'sellers'
@@ -471,111 +472,8 @@ export default function HowItWorks({ auth }) {
                 </div>
 
                 {/* ═══ FOOTER ══════════════════════════════════════════════════ */}
-                <footer className="bg-[#0B1E34] text-white pt-16 pb-12 w-full">
-                    <div className="max-w-[1240px] mx-auto px-6 lg:px-10">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12 pb-14">
-                            {/* Column 1: Brand Info */}
-                            <div className="lg:col-span-1">
-                                <div className="flex items-center gap-2 mb-6">
-                                    <div className="w-7 h-7 bg-[#1877F2] rounded-lg flex items-center justify-center">
-                                        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z" />
-                                        </svg>
-                                    </div>
-                                    <span className="text-white font-bold text-[17px] tracking-wider uppercase">CarBazar</span>
-                                </div>
+                <Footer user={auth?.user} />
 
-                                <div className="space-y-4 text-[13px] text-slate-300/90 font-normal">
-                                    <div className="flex items-start gap-3">
-                                        <svg className="w-4 h-4 text-slate-300 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.6">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-                                        </svg>
-                                        <span>Level 8, Concord Tower, Gulshan-2, Dhaka-1212</span>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <svg className="w-4 h-4 text-slate-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.6">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H3.75A2.25 2.25 0 001.5 4.5v2.25z" />
-                                        </svg>
-                                        <span>+880 1711-234567</span>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <svg className="w-4 h-4 text-slate-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.6">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-                                        </svg>
-                                        <span>support@carbazar.com.bd</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Column 2: Our Marketplace */}
-                            <div className="min-w-[120px]">
-                                <h4 className="text-white font-medium text-[15px] mb-4">Our Marketplace</h4>
-                                <ul className="space-y-2.5 text-[13px] text-slate-300/90 font-normal">
-                                    <li><Link href="/cars" className="hover:text-white transition-colors">Certified Cars</Link></li>
-                                    <li><Link href="/cars" className="hover:text-white transition-colors">Brand New Cars</Link></li>
-                                    <li>
-                                        <Link
-                                            href={auth?.user ? `${route('dashboard')}?action=sell` : `${route('login')}?role=seller`}
-                                            className="hover:text-white transition-colors"
-                                        >
-                                            Sell Your Car
-                                        </Link>
-                                    </li>
-                                    <li><Link href="/how-it-works" className="hover:text-white transition-colors">Inspection Reports</Link></li>
-                                </ul>
-                            </div>
-
-                            {/* Column 3: About & Support */}
-                            <div className="min-w-[120px]">
-                                <h4 className="text-white font-medium text-[15px] mb-4">CarBazar</h4>
-                                <ul className="space-y-2.5 text-[13px] text-slate-300/90 font-normal">
-                                    <li><Link href="/how-it-works" className="hover:text-white transition-colors">About Us</Link></li>
-                                    <li><Link href="/how-it-works" className="hover:text-white transition-colors">How It Works</Link></li>
-                                    <li><Link href="/#why-choose-us-section" className="hover:text-white transition-colors">Trust & Safety</Link></li>
-                                    <li><Link href="/how-it-works" className="hover:text-white transition-colors">FAQs</Link></li>
-                                </ul>
-                            </div>
-
-                            {/* Column 4: Quick Links */}
-                            <div className="min-w-[120px]">
-                                <h4 className="text-white font-medium text-[15px] mb-4">Services</h4>
-                                <ul className="space-y-2.5 text-[13px] text-slate-300/90 font-normal">
-                                    <li><Link href="/how-it-works" className="hover:text-white transition-colors">BRTA Transfer Assistance</Link></li>
-                                    <li><Link href="/cars" className="hover:text-white transition-colors">Car Valuation</Link></li>
-                                    <li><Link href="/how-it-works" className="hover:text-white transition-colors">Inspection Service</Link></li>
-                                </ul>
-                            </div>
-
-                            {/* Column 5: Social */}
-                            <div className="min-w-[140px]">
-                                <h4 className="text-white font-medium text-[15px] mb-4">Follow Us</h4>
-                                <p className="text-[13px] text-slate-300/80 mb-4 leading-relaxed">
-                                    Stay updated with the latest verified listings and automotive news in Bangladesh.
-                                </p>
-                                <div className="flex items-center gap-2">
-                                    <a href="#" aria-label="Facebook" className="w-7 h-7 rounded-[7px] border border-slate-400/70 hover:border-white hover:text-white flex items-center justify-center transition-colors">
-                                        <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M9 8H6v4h3v12h5V12h3.642L18 8h-4V6.333C14 5.374 14.5 5 15.5 5H18V0h-3.808C10.592 0 9 1.592 9 4.615V8z" /></svg>
-                                    </a>
-                                    <a href="#" aria-label="Instagram" className="w-7 h-7 rounded-[7px] border border-slate-400/70 hover:border-white hover:text-white flex items-center justify-center transition-colors">
-                                        <svg className="w-3.5 h-3.5 fill-none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z" /><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" /></svg>
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Bottom Copyright */}
-                        <div className="border-t border-[#0e2c4d] pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[13px] text-slate-400 w-full">
-                            <p className="text-slate-300/80 text-[13px] font-normal tracking-wide">
-                                Copyright {new Date().getFullYear()} • CarBazar, All Rights Reserved
-                            </p>
-                            <Link href={route('admin.login')} className="text-slate-400 hover:text-white transition-colors flex items-center gap-1.5 text-xs font-medium opacity-70 hover:opacity-100">
-                                <span>Admin Login</span>
-                                <span>→</span>
-                            </Link>
-                        </div>
-                    </div>
-                </footer>
             </div>
         </>
     );
