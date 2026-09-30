@@ -377,7 +377,7 @@ export default function Cars({ auth, collectionCars: dbCollectionCars, initialFi
                                     Sell
                                 </Link>
                                 <Link href="/how-it-works" className="hover:text-[#1877F2] transition-colors">How it works</Link>
-                                <Link href="/#why-choose-us-section" className="hover:text-[#1877F2] transition-colors">Why choose us</Link>
+                                <Link href="/why-choose-us" className="hover:text-[#1877F2] transition-colors">Why choose us</Link>
                             </nav>
 
                             {/* Auth Buttons */}

@@ -12,6 +12,7 @@ Route::get('/', [CarController::class, 'index'])->name('home');
 Route::get('/cars', [CarController::class, 'cars'])->name('cars.index');
 Route::get('/car/{slug?}', [CarController::class, 'show'])->name('car.details');
 Route::get('/how-it-works', [CarController::class, 'howItWorks'])->name('how-it-works');
+Route::get('/why-choose-us', [CarController::class, 'whyChooseUs'])->name('why-choose-us');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');

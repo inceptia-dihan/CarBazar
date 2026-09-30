@@ -6,9 +6,12 @@ import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 
 export default function Register() {
+    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const initialEmail = urlParams?.get('email') || '';
+
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
-        email: '',
+        email: initialEmail,
         password: '',
         password_confirmation: '',
     });

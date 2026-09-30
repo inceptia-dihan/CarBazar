@@ -90,4 +90,15 @@ class CarController extends Controller
             'canRegister' => Route::has('register'),
         ]);
     }
+
+    /**
+     * Display the Why Choose Us page.
+     */
+    public function whyChooseUs(): Response
+    {
+        return Inertia::render('WhyChooseUs', [
+            'canLogin' => Route::has('login'),
+            'canRegister' => Route::has('register'),
+        ]);
+    }
 }

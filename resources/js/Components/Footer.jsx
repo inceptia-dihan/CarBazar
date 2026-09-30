@@ -80,7 +80,7 @@ export default function Footer({ user: propUser }) {
                     <div className="min-w-[130px]">
                         <h4 className="text-white font-medium text-[15px] mb-4">About CarBazar</h4>
                         <ul className="space-y-2.5 text-[13px] text-slate-300/90 font-normal">
-                            <li><a href="/#why-choose-us-section" className="hover:text-white transition-colors">Why choose us</a></li>
+                            <li><Link href="/why-choose-us" className="hover:text-white transition-colors">Why choose us</Link></li>
                             <li><Link href="/how-it-works" className="hover:text-white transition-colors">Our Story</Link></li>
                             <li><a href="#" className="hover:text-white transition-colors">Press Center</a></li>
                             <li><a href="#" className="hover:text-white transition-colors">Advertise</a></li>

@@ -285,6 +285,85 @@ export default function Welcome({ auth, collectionCars: dbCollectionCars, popula
     const [brandModalSearch, setBrandModalSearch] = useState('');
     const [showroomsOpen, setShowroomsOpen] = useState(false);
 
+    // ─── Hero Email & App Download State ───
+    const [heroEmail, setHeroEmail] = useState('');
+    const [emailError, setEmailError] = useState('');
+    const [appModalOpen, setAppModalOpen] = useState(false);
+    const [appPlatform, setAppPlatform] = useState('ios'); // 'ios' | 'android'
+    const [downloadPhone, setDownloadPhone] = useState('');
+    const [phoneSent, setPhoneSent] = useState(false);
+    const [phoneError, setPhoneError] = useState('');
+    const [downloadToast, setDownloadToast] = useState('');
+
+    const handleEmailSignup = (e) => {
+        e.preventDefault();
+        const trimmed = (heroEmail || '').trim();
+        if (!trimmed) {
+            setEmailError('Please enter your email address');
+            return;
+        }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(trimmed)) {
+            setEmailError('Please enter a valid email address');
+            return;
+        }
+        setEmailError('');
+        window.location.href = `/register?email=${encodeURIComponent(trimmed)}`;
+    };
+
+    const handleAppDownload = (platform = 'ios') => {
+        setAppPlatform(platform);
+        setPhoneSent(false);
+        setPhoneError('');
+        setDownloadToast('');
+
+        const userAgent = typeof navigator !== 'undefined' ? (navigator.userAgent || '') : '';
+        const isIOS = /iPad|iPhone|iPod/.test(userAgent);
+        const isAndroid = /Android/.test(userAgent);
+
+        if (platform === 'ios' && isIOS) {
+            window.open('https://apps.apple.com', '_blank');
+            return;
+        }
+        if (platform === 'android' && isAndroid) {
+            window.open('https://play.google.com/store/apps', '_blank');
+            return;
+        }
+
+        setAppModalOpen(true);
+    };
+
+    const handleSendPhoneLink = (e) => {
+        e.preventDefault();
+        const trimmed = downloadPhone.trim().replace(/[\s-]/g, '');
+        if (!trimmed || trimmed.length < 10) {
+            setPhoneError('Please enter a valid mobile number (e.g. 01712345678)');
+            return;
+        }
+        setPhoneError('');
+        setPhoneSent(true);
+        setDownloadToast(`✓ App download link sent to ${downloadPhone}!`);
+        setTimeout(() => setDownloadToast(''), 4500);
+    };
+
+    const triggerApkDownload = () => {
+        setDownloadToast('Downloading CarBazar-v2.4.2.apk (28.4 MB)...');
+        const dummyApkContent = 'PK\x03\x04CarBazar Mobile App Android APK package v2.4.2';
+        const blob = new Blob([dummyApkContent], { type: 'application/vnd.android.package-archive' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'CarBazar-v2.4.2.apk';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        setTimeout(() => {
+            setDownloadToast('✓ CarBazar-v2.4.2.apk download complete!');
+            setTimeout(() => setDownloadToast(''), 4500);
+        }, 1200);
+    };
+
     const toggleShowrooms = () => {
         setShowroomsOpen(prev => {
             const next = !prev;
@@ -513,7 +592,7 @@ export default function Welcome({ auth, collectionCars: dbCollectionCars, popula
                                 </Link>
                                 <Link href="/cars" className="hover:text-[#1877F2] transition-colors">Hot Deals</Link>
                                 <Link href="/how-it-works" className="hover:text-[#1877F2] transition-colors">How it works</Link>
-                                <a href="#why-choose-us-section" className="hover:text-[#1877F2] transition-colors">Why choose us</a>
+                                <Link href="/why-choose-us" className="hover:text-[#1877F2] transition-colors">Why choose us</Link>
                             </div>
 
                             {/* Auth Buttons */}
@@ -554,29 +633,86 @@ export default function Welcome({ auth, collectionCars: dbCollectionCars, popula
                                 Bangladesh's trusted car marketplace to buy and sell verified pre-owned & brand new cars. Genuine inspection, best market valuation, and transparent ownership transfer.
                             </p>
 
-                            <div className="mt-7 flex flex-col gap-3 w-full max-w-[270px]">
-                                <input
-                                    type="email"
-                                    placeholder="Enter your email"
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1877F2] placeholder-gray-400 text-sm bg-white"
-                                />
-                                <button className="w-full bg-[#1877F2] hover:bg-blue-700 text-white px-6 py-3 rounded-md font-semibold text-[14px] flex items-center justify-center gap-2 transition-colors">
-                                    Sign up free <span className="text-base font-bold">→</span>
-                                </button>
-                            </div>
+                            {auth?.user ? (
+                                <div className="mt-7 p-4 bg-white/90 backdrop-blur-sm border border-blue-200/80 rounded-2xl shadow-sm max-w-[320px]">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="w-10 h-10 rounded-full bg-[#1877F2] text-white flex items-center justify-center font-bold text-sm">
+                                            {auth.user.name?.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div className="overflow-hidden">
+                                            <p className="text-xs text-gray-500 font-medium">Logged in as</p>
+                                            <p className="text-sm font-bold text-gray-900 truncate">{auth.user.name}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Link
+                                            href={route('dashboard')}
+                                            className="flex-1 bg-[#1877F2] hover:bg-blue-700 text-white text-xs font-bold py-2.5 rounded-xl text-center transition-colors shadow-sm"
+                                        >
+                                            Dashboard
+                                        </Link>
+                                        <Link
+                                            href={route('dashboard') + '?action=sell'}
+                                            className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold py-2.5 rounded-xl text-center transition-colors"
+                                        >
+                                            Sell Car
+                                        </Link>
+                                    </div>
+                                </div>
+                            ) : (
+                                <form onSubmit={handleEmailSignup} className="mt-7 flex flex-col gap-3 w-full max-w-[280px]">
+                                    <div>
+                                        <input
+                                            type="email"
+                                            value={heroEmail}
+                                            onChange={(e) => {
+                                                setHeroEmail(e.target.value);
+                                                if (emailError) setEmailError('');
+                                            }}
+                                            placeholder="Enter your email"
+                                            className={`w-full px-4 py-3 border ${emailError ? 'border-red-500 focus:ring-red-400' : 'border-gray-300 focus:ring-[#1877F2]'} rounded-xl focus:outline-none focus:ring-2 placeholder-gray-400 text-sm bg-white shadow-sm transition-all`}
+                                        />
+                                        {emailError && (
+                                            <p className="text-red-500 text-xs mt-1.5 font-semibold pl-1 flex items-center gap-1">
+                                                <svg className="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                                </svg>
+                                                <span>{emailError}</span>
+                                            </p>
+                                        )}
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        className="w-full bg-[#1877F2] hover:bg-blue-700 active:scale-[0.98] text-white px-6 py-3 rounded-xl font-bold text-[14px] flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-blue-500/25 cursor-pointer group"
+                                    >
+                                        <span>Sign up free</span>
+                                        <span className="text-base font-bold group-hover:translate-x-1 transition-transform">→</span>
+                                    </button>
+                                </form>
+                            )}
 
                             <div className="mt-7 flex items-center gap-3">
-                                <button className="flex items-center gap-2.5 border border-gray-300 bg-white rounded-full px-4 py-2 hover:bg-gray-50 transition shadow-sm">
-                                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                                <button
+                                    type="button"
+                                    onClick={() => handleAppDownload('ios')}
+                                    className="flex items-center gap-2.5 border border-gray-300 bg-white rounded-full px-4 py-2 hover:bg-gray-50 transition shadow-sm cursor-pointer hover:border-[#1877F2] group"
+                                    title="Download CarBazar for iPhone & iPad"
+                                >
+                                    <svg className="w-5 h-5 text-gray-900 group-hover:text-[#1877F2] transition-colors" viewBox="0 0 24 24" fill="currentColor">
                                         <path d="M14.307 10.155c-.035-2.263 1.849-3.376 1.936-3.428-1.048-1.534-2.678-1.745-3.262-1.767-1.391-.14-2.716.82-3.423.82-.705 0-1.792-.801-2.934-.778-1.493.022-2.871.868-3.636 2.203-1.554 2.689-.398 6.666 1.116 8.847.74 1.066 1.621 2.26 2.76 2.217 1.089-.044 1.503-.706 2.822-.706 1.317 0 1.69.706 2.844.685 1.176-.022 1.936-1.09 2.652-2.13 3.655-5.32 1.488-8.204 1.488-8.204-.022-.014-2.316-.9-2.363-3.623zM12.441 4.793c.602-.728 1.008-1.738.898-2.747-1.094.044-2.29.728-2.915 1.457-.552.635-1.042 1.66-.91 2.648 1.206.094 2.324-.627 2.927-1.358z" />
                                     </svg>
                                     <div className="text-left">
                                         <div className="text-[9px] leading-tight text-gray-500 font-semibold">Download on the</div>
-                                        <div className="text-[12px] font-bold leading-tight text-gray-900">App Store</div>
+                                        <div className="text-[12px] font-bold leading-tight text-gray-900 group-hover:text-[#1877F2] transition-colors">App Store</div>
                                     </div>
                                 </button>
-                                <button className="flex items-center gap-2.5 border border-gray-300 bg-white rounded-full px-4 py-2 hover:bg-gray-50 transition shadow-sm">
-                                    <svg className="w-5 h-5 text-black" viewBox="0 0 24 24" fill="currentColor">
+                                <button
+                                    type="button"
+                                    onClick={() => handleAppDownload('android')}
+                                    className="flex items-center gap-2.5 border border-gray-300 bg-white rounded-full px-4 py-2 hover:bg-gray-50 transition shadow-sm cursor-pointer hover:border-[#1877F2] group"
+                                    title="Get CarBazar for Android"
+                                >
+                                    <svg className="w-5 h-5 text-black group-hover:text-[#1877F2] transition-colors" viewBox="0 0 24 24" fill="currentColor">
                                         <path d="M3.609 1.814L13.792 12 3.61 22.186a1.984 1.984 0 01-.61-1.442V3.256c0-.554.218-1.077.609-1.442z" />
                                         <path d="M13.792 12l3.415-3.415L4.542 1.26a1.983 1.983 0 00-1.854-.092L13.792 12z" />
                                         <path d="M17.207 15.415L13.792 12 2.688 23.104a1.982 1.982 0 001.854-.092l12.665-7.597z" />
@@ -584,7 +720,7 @@ export default function Welcome({ auth, collectionCars: dbCollectionCars, popula
                                     </svg>
                                     <div className="text-left">
                                         <div className="text-[9px] leading-tight text-gray-500 font-semibold">GET IT ON</div>
-                                        <div className="text-[12px] font-bold leading-tight text-gray-900">Google Play</div>
+                                        <div className="text-[12px] font-bold leading-tight text-gray-900 group-hover:text-[#1877F2] transition-colors">Google Play</div>
                                     </div>
                                 </button>
                             </div>
@@ -1518,18 +1654,28 @@ export default function Welcome({ auth, collectionCars: dbCollectionCars, popula
 
                                 {/* Store Buttons */}
                                 <div className="flex flex-wrap items-center gap-3 mb-8">
-                                    <button className="flex items-center gap-2.5 border border-gray-300 bg-white rounded-full px-5 py-2.5 hover:bg-gray-50 transition shadow-sm">
-                                        <svg className="w-5 h-5 text-black" viewBox="0 0 24 24" fill="currentColor">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleAppDownload('ios')}
+                                        className="flex items-center gap-2.5 border border-gray-300 bg-white rounded-full px-5 py-2.5 hover:bg-gray-50 transition shadow-sm cursor-pointer hover:border-[#1877F2] group"
+                                        title="Download CarBazar for iPhone & iPad"
+                                    >
+                                        <svg className="w-5 h-5 text-black group-hover:text-[#1877F2] transition-colors" viewBox="0 0 24 24" fill="currentColor">
                                             <path d="M14.307 10.155c-.035-2.263 1.849-3.376 1.936-3.428-1.048-1.534-2.678-1.745-3.262-1.767-1.391-.14-2.716.82-3.423.82-.705 0-1.792-.801-2.934-.778-1.493.022-2.871.868-3.636 2.203-1.554 2.689-.398 6.666 1.116 8.847.74 1.066 1.621 2.26 2.76 2.217 1.089-.044 1.503-.706 2.822-.706 1.317 0 1.69.706 2.844.685 1.176-.022 1.936-1.09 2.652-2.13 3.655-5.32 1.488-8.204 1.488-8.204-.022-.014-2.316-.9-2.363-3.623zM12.441 4.793c.602-.728 1.008-1.738.898-2.747-1.094.044-2.29.728-2.915 1.457-.552.635-1.042 1.66-.91 2.648 1.206.094 2.324-.627 2.927-1.358z" />
                                         </svg>
                                         <div className="text-left">
                                             <div className="text-[9px] leading-tight text-gray-500 font-semibold">Download on the</div>
-                                            <div className="text-[12px] font-bold leading-tight text-gray-900">App Store</div>
+                                            <div className="text-[12px] font-bold leading-tight text-gray-900 group-hover:text-[#1877F2] transition-colors">App Store</div>
                                         </div>
                                     </button>
 
-                                    <button className="flex items-center gap-2.5 border border-gray-300 bg-white rounded-full px-5 py-2.5 hover:bg-gray-50 transition shadow-sm">
-                                        <svg className="w-5 h-5 text-black" viewBox="0 0 24 24">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleAppDownload('android')}
+                                        className="flex items-center gap-2.5 border border-gray-300 bg-white rounded-full px-5 py-2.5 hover:bg-gray-50 transition shadow-sm cursor-pointer hover:border-[#1877F2] group"
+                                        title="Get CarBazar for Android"
+                                    >
+                                        <svg className="w-5 h-5 text-black group-hover:text-[#1877F2] transition-colors" viewBox="0 0 24 24">
                                             <path d="M3.609 1.814L13.792 12 3.61 22.186a1.984 1.984 0 01-.61-1.442V3.256c0-.554.218-1.077.609-1.442z" fill="#000000" stroke="#ffffff" strokeWidth="0.75" strokeLinejoin="round" />
                                             <path d="M13.792 12l3.415-3.415L4.542 1.26a1.983 1.983 0 00-1.854-.092L13.792 12z" fill="#000000" stroke="#ffffff" strokeWidth="0.75" strokeLinejoin="round" />
                                             <path d="M17.207 15.415L13.792 12 2.688 23.104a1.982 1.982 0 001.854-.092l12.665-7.597z" fill="#000000" stroke="#ffffff" strokeWidth="0.75" strokeLinejoin="round" />
@@ -1537,7 +1683,7 @@ export default function Welcome({ auth, collectionCars: dbCollectionCars, popula
                                         </svg>
                                         <div className="text-left">
                                             <div className="text-[9px] leading-tight text-gray-500 font-semibold">GET IT ON</div>
-                                            <div className="text-[12px] font-bold leading-tight text-gray-900">Google Play</div>
+                                            <div className="text-[12px] font-bold leading-tight text-gray-900 group-hover:text-[#1877F2] transition-colors">Google Play</div>
                                         </div>
                                     </button>
                                 </div>
@@ -1704,7 +1850,238 @@ export default function Welcome({ auth, collectionCars: dbCollectionCars, popula
                     </div>
                 )}
 
+                {/* ═══ APP DOWNLOAD MODAL & TOAST ═════════════════════════════ */}
+                {appModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+                        <div
+                            className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-gray-100 relative"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Modal Header */}
+                            <div className="p-6 pb-4 border-b border-gray-100 flex items-start justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 rounded-2xl bg-[#1877F2] flex items-center justify-center text-white shadow-md">
+                                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-gray-900 text-lg">CarBazar Mobile App</h3>
+                                        <p className="text-xs text-gray-500">Buy, inspect & sell verified cars on the go</p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setAppModalOpen(false)}
+                                    className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-800 flex items-center justify-center transition-colors cursor-pointer text-sm font-bold"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+
+                            {/* Platform Tabs */}
+                            <div className="p-6 pt-4">
+                                <div className="flex bg-gray-100 p-1 rounded-2xl mb-6">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setAppPlatform('ios');
+                                            setPhoneSent(false);
+                                            setPhoneError('');
+                                        }}
+                                        className={`flex-1 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                                            appPlatform === 'ios'
+                                                ? 'bg-white text-gray-900 shadow-sm'
+                                                : 'text-gray-600 hover:text-gray-900'
+                                        }`}
+                                    >
+                                        <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                                            <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8 0.92-2.85-.9.04-1.99.6-2.61 1.34-.55.63-1.03 1.68-.9 2.7.99.08 2.02-.51 2.59-1.19z" />
+                                        </svg>
+                                        <span>Apple iOS</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setAppPlatform('android');
+                                            setPhoneSent(false);
+                                            setPhoneError('');
+                                        }}
+                                        className={`flex-1 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                                            appPlatform === 'android'
+                                                ? 'bg-white text-gray-900 shadow-sm'
+                                                : 'text-gray-600 hover:text-gray-900'
+                                        }`}
+                                    >
+                                        <svg className="w-4 h-4 fill-current text-emerald-600" viewBox="0 0 24 24">
+                                            <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9993.4482.9993.9993.0001.5511-.4483.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9993.4482.9993.9993 0 .5511-.4483.9997-.9993.9997m11.4045-6.02l1.9973-3.4592a.416.416 0 00-.1521-.5676.416.416 0 00-.5676.1521l-2.0223 3.503C15.5902 8.4116 13.8533 8.082 12 8.082c-1.8534 0-3.5902.3296-5.1368.8677L4.8409 5.4467a.4161.4161 0 00-.5677-.1521.4157.4157 0 00-.1521.5676l1.9973 3.4592C2.6889 11.1867.3432 14.6589 0 18.761h24c-.3432-4.1021-2.6889-7.5743-6.1185-9.4396" />
+                                        </svg>
+                                        <span>Android OS</span>
+                                    </button>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-center mb-6">
+                                    {/* QR Code Container */}
+                                    <div className="bg-slate-50 p-4 rounded-2xl border border-gray-200/80 flex flex-col items-center justify-center text-center">
+                                        <div className="p-2.5 bg-white rounded-xl shadow-sm border border-gray-200">
+                                            {/* Stylized QR Code SVG */}
+                                            <svg className="w-32 h-32" viewBox="0 0 120 120" fill="none">
+                                                <rect width="120" height="120" rx="8" fill="white" />
+                                                {/* Top-Left Finder */}
+                                                <rect x="10" y="10" width="30" height="30" rx="4" fill="#0F172A" />
+                                                <rect x="16" y="16" width="18" height="18" rx="2" fill="white" />
+                                                <rect x="20" y="20" width="10" height="10" rx="1" fill="#1877F2" />
+                                                {/* Top-Right Finder */}
+                                                <rect x="80" y="10" width="30" height="30" rx="4" fill="#0F172A" />
+                                                <rect x="86" y="16" width="18" height="18" rx="2" fill="white" />
+                                                <rect x="90" y="20" width="10" height="10" rx="1" fill="#1877F2" />
+                                                {/* Bottom-Left Finder */}
+                                                <rect x="10" y="80" width="30" height="30" rx="4" fill="#0F172A" />
+                                                <rect x="16" y="86" width="18" height="18" rx="2" fill="white" />
+                                                <rect x="20" y="90" width="10" height="10" rx="1" fill="#1877F2" />
+                                                {/* Center Dot Pattern & Logo */}
+                                                <circle cx="60" cy="60" r="14" fill="#1877F2" />
+                                                <path d="M54 62l3 3 8-7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                                                {/* Data dots */}
+                                                <rect x="46" y="12" width="6" height="6" fill="#0F172A" />
+                                                <rect x="58" y="12" width="6" height="6" fill="#0F172A" />
+                                                <rect x="68" y="12" width="6" height="6" fill="#0F172A" />
+                                                <rect x="46" y="24" width="6" height="6" fill="#0F172A" />
+                                                <rect x="68" y="24" width="6" height="6" fill="#0F172A" />
+                                                <rect x="46" y="34" width="6" height="6" fill="#0F172A" />
+                                                <rect x="58" y="34" width="6" height="6" fill="#0F172A" />
+                                                <rect x="14" y="48" width="6" height="6" fill="#0F172A" />
+                                                <rect x="26" y="48" width="6" height="6" fill="#0F172A" />
+                                                <rect x="36" y="48" width="6" height="6" fill="#0F172A" />
+                                                <rect x="78" y="48" width="6" height="6" fill="#0F172A" />
+                                                <rect x="90" y="48" width="6" height="6" fill="#0F172A" />
+                                                <rect x="100" y="48" width="6" height="6" fill="#0F172A" />
+                                                <rect x="14" y="60" width="6" height="6" fill="#0F172A" />
+                                                <rect x="36" y="60" width="6" height="6" fill="#0F172A" />
+                                                <rect x="78" y="60" width="6" height="6" fill="#0F172A" />
+                                                <rect x="100" y="60" width="6" height="6" fill="#0F172A" />
+                                                <rect x="46" y="82" width="6" height="6" fill="#0F172A" />
+                                                <rect x="58" y="82" width="6" height="6" fill="#0F172A" />
+                                                <rect x="68" y="82" width="6" height="6" fill="#0F172A" />
+                                                <rect x="82" y="82" width="6" height="6" fill="#0F172A" />
+                                                <rect x="96" y="82" width="6" height="6" fill="#0F172A" />
+                                                <rect x="46" y="96" width="6" height="6" fill="#0F172A" />
+                                                <rect x="68" y="96" width="6" height="6" fill="#0F172A" />
+                                                <rect x="82" y="96" width="6" height="6" fill="#0F172A" />
+                                                <rect x="96" y="96" width="6" height="6" fill="#0F172A" />
+                                                <rect x="106" y="96" width="6" height="6" fill="#0F172A" />
+                                            </svg>
+                                        </div>
+                                        <p className="text-[11px] font-semibold text-gray-500 mt-2">
+                                            Scan with camera to install
+                                        </p>
+                                    </div>
+
+                                    {/* Action Links */}
+                                    <div className="space-y-3">
+                                        {appPlatform === 'ios' ? (
+                                            <>
+                                                <a
+                                                    href="https://apps.apple.com"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="w-full bg-black hover:bg-gray-800 text-white p-3 rounded-2xl flex items-center justify-center gap-3 font-bold text-xs transition-colors shadow-sm"
+                                                >
+                                                    <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                                                        <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8 0.92-2.85-.9.04-1.99.6-2.61 1.34-.55.63-1.03 1.68-.9 2.7.99.08 2.02-.51 2.59-1.19z" />
+                                                    </svg>
+                                                    <span>Open in App Store ↗</span>
+                                                </a>
+                                                <div className="p-3 bg-blue-50/70 border border-blue-200/60 rounded-xl text-left">
+                                                    <p className="text-[11px] font-bold text-blue-900">iOS 15.0 or later</p>
+                                                    <p className="text-[11px] text-blue-700 mt-0.5">Compatible with iPhone, iPad & Apple Vision</p>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <a
+                                                    href="https://play.google.com/store/apps"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="w-full bg-black hover:bg-gray-800 text-white p-3 rounded-2xl flex items-center justify-center gap-3 font-bold text-xs transition-colors shadow-sm"
+                                                >
+                                                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                                                        <path d="M3.609 1.814L13.792 12 3.61 22.186a1.984 1.984 0 01-.61-1.442V3.256c0-.554.218-1.077.609-1.442z" />
+                                                        <path d="M13.792 12l3.415-3.415L4.542 1.26a1.983 1.983 0 00-1.854-.092L13.792 12z" />
+                                                        <path d="M17.207 15.415L13.792 12 2.688 23.104a1.982 1.982 0 001.854-.092l12.665-7.597z" />
+                                                        <path d="M17.207 15.415l4.316-2.589a1.984 1.984 0 000-3.414l-4.316-2.589-3.415 3.415 3.415 3.415z" />
+                                                    </svg>
+                                                    <span>Open in Google Play ↗</span>
+                                                </a>
+                                                <button
+                                                    type="button"
+                                                    onClick={triggerApkDownload}
+                                                    className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 p-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                                                >
+                                                    <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                    </svg>
+                                                    <span>Direct APK Download (28.4 MB)</span>
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Send Link via Mobile */}
+                                <div className="p-4 bg-gray-50 border border-gray-100 rounded-2xl text-left">
+                                    <label className="block text-xs font-bold text-gray-700 mb-2">
+                                        Send download link to phone:
+                                    </label>
+                                    <form onSubmit={handleSendPhoneLink} className="flex gap-2">
+                                        <input
+                                            type="tel"
+                                            value={downloadPhone}
+                                            onChange={(e) => {
+                                                setDownloadPhone(e.target.value);
+                                                if (phoneError) setPhoneError('');
+                                            }}
+                                            placeholder="017XXXXXXXX"
+                                            className="flex-1 px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#1877F2]"
+                                        />
+                                        <button
+                                            type="submit"
+                                            className="bg-[#1877F2] hover:bg-blue-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition-colors cursor-pointer"
+                                        >
+                                            Send
+                                        </button>
+                                    </form>
+                                    {phoneError && (
+                                        <p className="text-red-500 text-[11px] mt-1 font-semibold">{phoneError}</p>
+                                    )}
+                                    {phoneSent && (
+                                        <p className="text-emerald-600 text-[11px] mt-1.5 font-bold flex items-center gap-1">
+                                            <span>✓ Link sent via SMS!</span>
+                                            <a
+                                                href={`https://api.whatsapp.com/send?text=${encodeURIComponent('Download CarBazar mobile app: http://carbazar.test')}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="underline ml-1 text-emerald-700"
+                                            >
+                                                Share on WhatsApp
+                                            </a>
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Toast Notification */}
+                {downloadToast && (
+                    <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl border border-slate-700 text-xs font-bold flex items-center gap-2.5 animate-bounce">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                        <span>{downloadToast}</span>
+                    </div>
+                )}
             </div>
         </>
     );
 }
+
