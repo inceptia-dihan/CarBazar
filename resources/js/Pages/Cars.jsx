@@ -410,8 +410,9 @@ export default function Cars({ auth, collectionCars: dbCollectionCars, initialFi
                     {/* ═══ MAIN LAYOUT: FULL-LEFT SIDEBAR & RIGHT CONTENT ═════════════ */}
                     <div className="flex-1 flex flex-col lg:flex-row w-full min-h-[calc(100vh-70px)]">
 
-                        {/* ═══ DESKTOP STICKY LEFT SIDEBAR (Starts directly under header, full height, flush to left screen edge) ═══ */}
-                        <aside className="hidden lg:block w-[290px] xl:w-[320px] 2xl:w-[340px] shrink-0 bg-white border-r border-gray-200 sticky top-[70px] h-[calc(100vh-70px)] z-30 shadow-[2px_0_8px_rgba(0,0,0,0.02)]">
+                        {/* ═══ DESKTOP STICKY LEFT SIDEBAR ═══ */}
+                        <aside className="hidden lg:block w-[240px] xl:w-[260px] shrink-0 bg-transparent pl-4 pt-5 pb-5 sticky top-[70px] h-[calc(100vh-70px)] z-30">
+                            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm h-full overflow-hidden flex flex-col">
                             <CarSidebarFilter
                                 selectedBrand={selectedBrand}
                                 setSelectedBrand={setSelectedBrand}
@@ -431,6 +432,7 @@ export default function Cars({ auth, collectionCars: dbCollectionCars, initialFi
                                 searchKeyword={searchKeyword}
                                 setSearchKeyword={setSearchKeyword}
                             />
+                            </div>
                         </aside>
 
                         {/* ═══ RIGHT COLUMN: BANNER + TOOLBAR + CARS GRID + PAGINATION ═══ */}

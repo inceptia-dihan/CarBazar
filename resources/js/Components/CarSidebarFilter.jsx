@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import { CAR_BRANDS, PRICE_RANGES, CAR_CONDITIONS } from '@/data/carBrandsModels';
 
 const BODY_TYPES = [
-    { id: '', label: 'All Types' },
     { id: 'Sedan', label: 'Sedan' },
     { id: 'SUV', label: 'SUV' },
     { id: 'Crossover', label: 'Crossover' },
@@ -30,40 +29,14 @@ export default function CarSidebarFilter({
     totalCount = 0,
     onCloseMobile,
     searchKeyword = '',
-    setSearchKeyword = () => {},
+    setSearchKeyword = () => { },
 }) {
     const [brandSearch, setBrandSearch] = useState('');
     const [modelSearch, setModelSearch] = useState('');
     const [customMin, setCustomMin] = useState(minPrice ? String(minPrice) : '');
     const [customMax, setCustomMax] = useState(maxPrice ? String(maxPrice) : '');
-    const [showAllBrands, setShowAllBrands] = useState(false);
+    const [openSection, setOpenSection] = useState(null); // only one section open at a time
 
-    // Collapsible accordion state for each filter section
-    const [collapsed, setCollapsed] = useState({
-        brand: false,
-        model: false,
-        price: false,
-        condition: false,
-        bodyType: false,
-    });
-
-    const toggleSection = (key) => {
-        setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }));
-    };
-
-    const allCollapsed = Object.values(collapsed).every(Boolean);
-    const toggleAllSections = () => {
-        const nextState = !allCollapsed;
-        setCollapsed({
-            brand: nextState,
-            model: nextState,
-            price: nextState,
-            condition: nextState,
-            bodyType: nextState,
-        });
-    };
-
-    // Active filters count
     const activeFiltersCount = [
         selectedBrand,
         selectedModel,
@@ -72,46 +45,30 @@ export default function CarSidebarFilter({
         minPrice !== null || maxPrice !== null ? 'price' : '',
     ].filter(Boolean).length;
 
-    // Filtered brand list
-    const filteredBrands = useMemo(() => {
-        if (!brandSearch.trim()) return CAR_BRANDS;
+    // Brand list — only show when there's a search query
+    const brandResults = useMemo(() => {
         const q = brandSearch.toLowerCase().trim();
-        return CAR_BRANDS.filter((b) => b.name.toLowerCase().includes(q));
+        if (!q) return [];
+        return CAR_BRANDS.filter((b) => b.name.toLowerCase().includes(q)).slice(0, 8);
     }, [brandSearch]);
 
-    const displayedBrands = useMemo(() => {
-        if (showAllBrands || brandSearch.trim()) return filteredBrands;
-        return filteredBrands.slice(0, 8);
-    }, [filteredBrands, showAllBrands, brandSearch]);
-
-    // Available models based on selected brand
-    const availableModels = useMemo(() => {
-        if (selectedBrand) {
-            const brandObj = CAR_BRANDS.find(
-                (b) => b.name.toLowerCase() === selectedBrand.toLowerCase()
-            );
-            return brandObj ? brandObj.models : [];
-        }
-        return CAR_BRANDS.filter((b) => b.popular).flatMap((b) =>
-            b.models.slice(0, 3).map((m) => ({ model: m, brand: b.name }))
-        );
-    }, [selectedBrand]);
-
-    // Filtered models
-    const filteredModels = useMemo(() => {
+    // Model list — based on selected brand or search
+    const modelResults = useMemo(() => {
         const q = modelSearch.toLowerCase().trim();
         if (selectedBrand) {
-            if (!q) return availableModels;
-            return availableModels.filter((m) => m.toLowerCase().includes(q));
-        } else {
-            if (!q) return availableModels.slice(0, 10);
-            return availableModels.filter(
-                (item) =>
-                    item.model.toLowerCase().includes(q) ||
-                    item.brand.toLowerCase().includes(q)
-            );
+            const brandObj = CAR_BRANDS.find((b) => b.name.toLowerCase() === selectedBrand.toLowerCase());
+            const models = brandObj ? brandObj.models : [];
+            if (!q) return models.slice(0, 8);
+            return models.filter((m) => m.toLowerCase().includes(q)).slice(0, 8);
         }
-    }, [availableModels, modelSearch, selectedBrand]);
+        if (!q) return [];
+        return CAR_BRANDS.flatMap((b) =>
+            b.models
+                .filter((m) => m.toLowerCase().includes(q) || b.name.toLowerCase().includes(q))
+                .slice(0, 2)
+                .map((m) => ({ model: m, brand: b.name }))
+        ).slice(0, 8);
+    }, [modelSearch, selectedBrand]);
 
     const handleSelectBrand = (brandName) => {
         if (selectedBrand.toLowerCase() === brandName.toLowerCase()) {
@@ -120,10 +77,8 @@ export default function CarSidebarFilter({
         } else {
             setSelectedBrand(brandName);
             setSelectedModel('');
-            // Auto open model section if collapsed
-            setCollapsed((prev) => ({ ...prev, model: false }));
         }
-        setModelSearch('');
+        setBrandSearch('');
     };
 
     const handleSelectModel = (modelName, brandOfModel = null) => {
@@ -131,607 +86,322 @@ export default function CarSidebarFilter({
             setSelectedModel('');
         } else {
             setSelectedModel(modelName);
-            if (brandOfModel && !selectedBrand) {
-                setSelectedBrand(brandOfModel);
-            }
+            if (brandOfModel && !selectedBrand) setSelectedBrand(brandOfModel);
         }
+        setModelSearch('');
     };
 
     const handleApplyCustomPrice = (e) => {
         e.preventDefault();
-        const minVal = customMin ? parseInt(customMin, 10) : null;
-        const maxVal = customMax ? parseInt(customMax, 10) : null;
-        setMinPrice(minVal);
-        setMaxPrice(maxVal);
+        setMinPrice(customMin ? parseInt(customMin, 10) : null);
+        setMaxPrice(customMax ? parseInt(customMax, 10) : null);
     };
 
-    const handleSelectPriceRange = (range) => {
-        setMinPrice(range.min);
-        setMaxPrice(range.max);
-        setCustomMin(range.min !== null ? String(range.min) : '');
-        setCustomMax(range.max !== null ? String(range.max) : '');
-    };
-
-    const isCurrentPriceRange = (range) => {
-        return minPrice === range.min && maxPrice === range.max;
-    };
-
-    // Formatted current price summary
     const currentPriceSummary = useMemo(() => {
         if (minPrice !== null || maxPrice !== null) {
-            const matchedPreset = PRICE_RANGES.find(
-                (r) => r.min === minPrice && r.max === maxPrice
-            );
-            if (matchedPreset) return matchedPreset.label;
-            if (minPrice && maxPrice) return `৳ ${(minPrice / 100000).toFixed(0)}L - ${(maxPrice / 100000).toFixed(0)}L`;
-            if (minPrice) return `> ৳ ${(minPrice / 100000).toFixed(0)} Lakh`;
-            if (maxPrice) return `< ৳ ${(maxPrice / 100000).toFixed(0)} Lakh`;
+            const preset = PRICE_RANGES.find((r) => r.min === minPrice && r.max === maxPrice);
+            if (preset) return preset.label;
+            if (minPrice && maxPrice) return `${(minPrice / 100000).toFixed(0)}L – ${(maxPrice / 100000).toFixed(0)}L`;
+            if (minPrice) return `> ${(minPrice / 100000).toFixed(0)}L`;
+            if (maxPrice) return `< ${(maxPrice / 100000).toFixed(0)}L`;
         }
-        return 'All Prices';
+        return null;
     }, [minPrice, maxPrice]);
 
-    // Current condition summary
     const currentConditionObj = CAR_CONDITIONS.find((c) => c.id === (selectedCondition || 'all'));
 
-    return (
-        <div className="w-full h-full flex flex-col bg-white select-none">
-            {/* ═══ SIDEBAR TOP HEADER ═══ */}
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-slate-50/80 shrink-0">
-                <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-[#1877F2]/10 text-[#1877F2] flex items-center justify-center shrink-0">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                        </svg>
-                    </div>
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <h2 className="font-extrabold text-[15px] text-gray-900 leading-tight">Filter Cars</h2>
-                            {activeFiltersCount > 0 && (
-                                <span className="bg-[#1877F2] text-white text-[10px] font-black px-1.5 py-0.2 rounded-full">
-                                    {activeFiltersCount}
-                                </span>
-                            )}
-                        </div>
-                        <p className="text-[11px] text-gray-500 font-medium">
-                            {filteredCount} {filteredCount === 1 ? 'vehicle' : 'vehicles'} found
-                        </p>
-                    </div>
-                </div>
+    const toggle = (key) => setOpenSection((prev) => (prev === key ? null : key));
 
-                <div className="flex items-center gap-2">
-                    <button
-                        type="button"
-                        onClick={toggleAllSections}
-                        className="text-[11px] font-bold text-gray-500 hover:text-gray-800 transition-colors cursor-pointer px-1.5 py-0.5 rounded hover:bg-gray-200/60"
-                        title={allCollapsed ? "Expand all sections" : "Collapse all sections"}
-                    >
-                        {allCollapsed ? "Expand" : "Collapse"}
-                    </button>
-
-                    {activeFiltersCount > 0 && (
-                        <button
-                            type="button"
-                            onClick={() => {
-                                onResetAll();
-                                setCustomMin('');
-                                setCustomMax('');
-                                setBrandSearch('');
-                                setModelSearch('');
-                            }}
-                            className="text-xs font-bold text-red-600 hover:text-red-700 hover:underline flex items-center gap-0.5 cursor-pointer transition-colors"
-                        >
-                            <span>Clear</span>
-                        </button>
-                    )}
-
-                    {onCloseMobile && (
-                        <button
-                            type="button"
-                            onClick={onCloseMobile}
-                            className="lg:hidden w-8 h-8 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 flex items-center justify-center cursor-pointer"
-                        >
-                            ✕
-                        </button>
-                    )}
-                </div>
+    const SectionHeader = ({ sectionKey, label, value, onReset }) => (
+        <button
+            type="button"
+            onClick={() => toggle(sectionKey)}
+            className="w-full flex items-center justify-between py-2.5 px-3 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer group"
+        >
+            <div className="text-left min-w-0">
+                <div className="text-[12px] font-semibold text-gray-700 group-hover:text-blue-600 transition-colors">{label}</div>
+                {value && <div className="text-[10px] text-blue-600 font-medium truncate">{value}</div>}
             </div>
+            <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                {value && onReset && (
+                    <span
+                        onClick={(e) => { e.stopPropagation(); onReset(); }}
+                        className="text-[9px] text-gray-400 hover:text-red-500 cursor-pointer transition-colors px-1"
+                    >✕</span>
+                )}
+                <svg
+                    className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${openSection === sectionKey ? 'rotate-0' : '-rotate-90'}`}
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </div>
+        </button>
+    );
 
-            {/* ═══ GLOBAL CAR KEYWORD SEARCH (At top of sidebar) ═══ */}
-            <div className="p-3.5 border-b border-gray-100 bg-gray-50/70 shrink-0">
+    return (
+        <div className="w-full h-full flex flex-col bg-white select-none text-[12px]">
+
+            {/* ── HEADER ── */}
+            <div className="px-3 pt-4 pb-3 border-b border-gray-100 shrink-0">
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-md bg-blue-600 flex items-center justify-center shrink-0">
+                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-[13px] font-bold text-gray-900">Filters</span>
+                                {activeFiltersCount > 0 && (
+                                    <span className="bg-blue-600 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center leading-none">{activeFiltersCount}</span>
+                                )}
+                            </div>
+                            <div className="text-[10px] text-gray-400">{filteredCount} cars</div>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        {activeFiltersCount > 0 && (
+                            <button
+                                type="button"
+                                onClick={() => { onResetAll(); setCustomMin(''); setCustomMax(''); setBrandSearch(''); setModelSearch(''); }}
+                                className="text-[10px] font-semibold text-red-500 hover:text-red-600 cursor-pointer"
+                            >
+                                Clear all
+                            </button>
+                        )}
+                        {onCloseMobile && (
+                            <button type="button" onClick={onCloseMobile} className="lg:hidden w-6 h-6 rounded-md bg-gray-100 text-gray-500 flex items-center justify-center cursor-pointer text-xs">✕</button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Global search */}
                 <div className="relative">
+                    <svg className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
                     <input
                         type="text"
                         value={searchKeyword}
                         onChange={(e) => setSearchKeyword(e.target.value)}
-                        placeholder="Search any car name or model..."
-                        className="w-full text-xs bg-white border border-gray-200 rounded-xl px-3 py-2 pl-8 pr-7 text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#1877F2] focus:ring-1 focus:ring-[#1877F2] transition-all shadow-sm"
+                        placeholder="Search cars..."
+                        className="w-full text-[12px] bg-gray-50 border border-gray-200 rounded-lg pl-8 pr-7 py-2 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-400 focus:border-blue-400 transition-all"
                     />
-                    <svg className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
                     {searchKeyword && (
-                        <button
-                            type="button"
-                            onClick={() => setSearchKeyword('')}
-                            className="absolute right-2.5 top-2 text-gray-400 hover:text-gray-600 text-xs cursor-pointer"
-                        >
-                            ✕
+                        <button type="button" onClick={() => setSearchKeyword('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
                         </button>
                     )}
                 </div>
             </div>
 
-            {/* ═══ SCROLLABLE ACCORDION FILTER SECTIONS ═══ */}
-            <div className="p-5 space-y-5 overflow-y-auto flex-1 custom-scrollbar divide-y divide-gray-100">
+            {/* ── SECTIONS ── */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar px-2 py-2 space-y-0.5">
 
-                {/* ═══ 1. BRAND / MAKE (COLLAPSIBLE) ═══ */}
+                {/* ── 1. BRAND ── */}
                 <div>
-                    <div
-                        onClick={() => toggleSection('brand')}
-                        className="flex items-center justify-between cursor-pointer py-1 select-none group"
-                    >
-                        <div className="flex items-center gap-2">
-                            <span className="text-[13px] font-bold text-gray-900 group-hover:text-[#1877F2] transition-colors">
-                                Brand / Make
-                            </span>
-                            {selectedBrand && (
-                                <span className="bg-[#1877F2]/10 text-[#1877F2] text-[10px] font-extrabold px-2 py-0.5 rounded-full">
-                                    {selectedBrand}
-                                </span>
-                            )}
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            {selectedBrand && (
-                                <button
-                                    type="button"
-                                    onClick={(e) => {
-                                         e.stopPropagation();
-                                         setSelectedBrand('');
-                                         setSelectedModel('');
-                                    }}
-                                    className="text-[11px] text-gray-400 hover:text-red-500 font-semibold"
-                                >
-                                    Reset
-                                </button>
-                            )}
-                            <div className="w-5 h-5 rounded-md flex items-center justify-center text-gray-400 group-hover:text-gray-700 transition-colors">
-                                <svg
-                                    className={`w-3.5 h-3.5 transform transition-transform duration-200 ${
-                                        collapsed.brand ? '-rotate-90 text-gray-400' : 'rotate-0 text-[#1877F2]'
-                                    }`}
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                    <SectionHeader
+                        sectionKey="brand"
+                        label="Brand / Make"
+                        value={selectedBrand || null}
+                        onReset={() => { setSelectedBrand(''); setSelectedModel(''); }}
+                    />
+                    {openSection === 'brand' && (
+                        <div className="px-3 pb-2">
+                            <div className="relative mb-2">
+                                <svg className="w-3 h-3 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                 </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    {!collapsed.brand && (
-                        <div className="mt-2.5 animate-fadeIn">
-                            {/* Brand Search Input with Collapse Button beside it */}
-                            <div className="flex items-center gap-1.5 mb-2.5">
-                                <div className="relative flex-1">
-                                    <input
-                                        type="text"
-                                        value={brandSearch}
-                                        onChange={(e) => setBrandSearch(e.target.value)}
-                                        placeholder="Search brand (e.g. Toyota)..."
-                                        className="w-full text-xs bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 pl-8 pr-7 text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#1877F2] focus:bg-white transition-all"
-                                    />
-                                    <svg className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                    </svg>
-                                    {brandSearch && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setBrandSearch('')}
-                                            className="absolute right-2.5 top-2 text-gray-400 hover:text-gray-600 text-xs"
-                                        >
-                                            ✕
-                                        </button>
-                                    )}
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => toggleSection('brand')}
-                                    title="Collapse Brand Section"
-                                    className="h-8 px-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-gray-400 hover:text-gray-700 flex items-center justify-center transition-colors cursor-pointer shrink-0"
-                                >
-                                    <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 15l7-7 7 7" />
-                                    </svg>
-                                </button>
-                            </div>
-
-                            {/* Brand List */}
-                            <div className="max-h-44 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setSelectedBrand('');
-                                        setSelectedModel('');
-                                    }}
-                                    className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
-                                        !selectedBrand
-                                            ? 'bg-[#1877F2] text-white shadow-sm'
-                                            : 'text-gray-700 hover:bg-gray-100'
-                                    }`}
-                                >
-                                    <span>All Brands</span>
-                                    {!selectedBrand && <span className="text-[10px]">✓</span>}
-                                </button>
-
-                                {displayedBrands.map((b) => {
-                                    const isSelected = selectedBrand.toLowerCase() === b.name.toLowerCase();
-                                    return (
-                                        <button
-                                            key={b.name}
-                                            type="button"
-                                            onClick={() => handleSelectBrand(b.name)}
-                                            className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
-                                                isSelected
-                                                    ? 'bg-[#1877F2] text-white shadow-sm'
-                                                    : 'text-gray-700 hover:bg-gray-100'
-                                            }`}
-                                        >
-                                            <span>{b.name}</span>
-                                            {isSelected ? (
-                                                <span className="text-[10px]">✓</span>
-                                            ) : (
-                                                <span className="text-[10px] text-gray-400">{b.models.length}</span>
-                                            )}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-
-                            {!brandSearch && filteredBrands.length > 8 && (
-                                <button
-                                    type="button"
-                                    onClick={() => setShowAllBrands(!showAllBrands)}
-                                    className="mt-2 text-[11px] font-bold text-[#1877F2] hover:text-blue-700 transition-colors cursor-pointer"
-                                >
-                                    {showAllBrands ? 'Show Less' : `+ ${filteredBrands.length - 8} More Brands`}
-                                </button>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                {/* ═══ 2. MODEL (COLLAPSIBLE) ═══ */}
-                <div className="pt-4">
-                    <div
-                        onClick={() => toggleSection('model')}
-                        className="flex items-center justify-between cursor-pointer py-1 select-none group"
-                    >
-                        <div className="flex items-center gap-2">
-                            <span className="text-[13px] font-bold text-gray-900 group-hover:text-[#1877F2] transition-colors">
-                                Model
-                            </span>
-                            {selectedModel ? (
-                                <span className="bg-[#1877F2]/10 text-[#1877F2] text-[10px] font-extrabold px-2 py-0.5 rounded-full truncate max-w-[110px]">
-                                    {selectedModel}
-                                </span>
-                            ) : selectedBrand ? (
-                                <span className="text-[11px] font-medium text-gray-400">
-                                    ({selectedBrand})
-                                </span>
-                            ) : null}
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            {selectedModel && (
-                                <button
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedModel('');
-                                    }}
-                                    className="text-[11px] text-gray-400 hover:text-red-500 font-semibold"
-                                >
-                                    Reset
-                                </button>
-                            )}
-                            <div className="w-5 h-5 rounded-md flex items-center justify-center text-gray-400 group-hover:text-gray-700 transition-colors">
-                                <svg
-                                    className={`w-3.5 h-3.5 transform transition-transform duration-200 ${
-                                        collapsed.model ? '-rotate-90 text-gray-400' : 'rotate-0 text-[#1877F2]'
-                                    }`}
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    {!collapsed.model && (
-                        <div className="mt-2.5 animate-fadeIn">
-                            {/* Model Search Input with Collapse Button beside it */}
-                            <div className="flex items-center gap-1.5 mb-2.5">
-                                <div className="relative flex-1">
-                                    <input
-                                        type="text"
-                                        value={modelSearch}
-                                        onChange={(e) => setModelSearch(e.target.value)}
-                                        placeholder={selectedBrand ? `Search ${selectedBrand} models...` : "Search all models..."}
-                                        className="w-full text-xs bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 pl-8 pr-7 text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#1877F2] focus:bg-white transition-all"
-                                    />
-                                    <svg className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                    </svg>
-                                    {modelSearch && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setModelSearch('')}
-                                            className="absolute right-2.5 top-2 text-gray-400 hover:text-gray-600 text-xs"
-                                        >
-                                            ✕
-                                        </button>
-                                    )}
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => toggleSection('model')}
-                                    title="Collapse Model Section"
-                                    className="h-8 px-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-gray-400 hover:text-gray-700 flex items-center justify-center transition-colors cursor-pointer shrink-0"
-                                >
-                                    <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 15l7-7 7 7" />
-                                    </svg>
-                                </button>
-                            </div>
-
-                            {/* Model List */}
-                            <div className="max-h-40 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
-                                <button
-                                    type="button"
-                                    onClick={() => setSelectedModel('')}
-                                    className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
-                                        !selectedModel
-                                            ? 'bg-[#1877F2] text-white shadow-sm'
-                                            : 'text-gray-700 hover:bg-gray-100'
-                                    }`}
-                                >
-                                    <span>All Models</span>
-                                    {!selectedModel && <span className="text-[10px]">✓</span>}
-                                </button>
-
-                                {selectedBrand ? (
-                                    filteredModels.map((m) => {
-                                        const isSelected = selectedModel.toLowerCase() === m.toLowerCase();
-                                        return (
-                                            <button
-                                                key={m}
-                                                type="button"
-                                                onClick={() => handleSelectModel(m)}
-                                                className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
-                                                    isSelected
-                                                        ? 'bg-[#1877F2] text-white shadow-sm'
-                                                        : 'text-gray-700 hover:bg-gray-100'
-                                                }`}
-                                            >
-                                                <span>{m}</span>
-                                                {isSelected && <span className="text-[10px]">✓</span>}
-                                            </button>
-                                        );
-                                    })
-                                ) : (
-                                    filteredModels.map((item, idx) => {
-                                        const isSelected = selectedModel.toLowerCase() === item.model.toLowerCase();
-                                        return (
-                                            <button
-                                                key={`${item.brand}-${item.model}-${idx}`}
-                                                type="button"
-                                                onClick={() => handleSelectModel(item.model, item.brand)}
-                                                className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
-                                                    isSelected
-                                                        ? 'bg-[#1877F2] text-white shadow-sm'
-                                                        : 'text-gray-700 hover:bg-gray-100'
-                                                }`}
-                                            >
-                                                <span>{item.model}</span>
-                                                <span className={`text-[10px] ${isSelected ? 'text-blue-100' : 'text-gray-400'}`}>
-                                                    {item.brand}
-                                                </span>
-                                            </button>
-                                        );
-                                    })
+                                <input
+                                    type="text"
+                                    value={brandSearch}
+                                    onChange={(e) => setBrandSearch(e.target.value)}
+                                    placeholder="Type to search brand..."
+                                    className="w-full text-[11px] bg-gray-50 border border-gray-200 rounded-lg pl-7 pr-6 py-1.5 text-gray-700 placeholder-gray-400 focus:outline-none focus:border-blue-400 transition-all"
+                                />
+                                {brandSearch && (
+                                    <button type="button" onClick={() => setBrandSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 cursor-pointer">
+                                        <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                                    </button>
                                 )}
                             </div>
+
+                            {selectedBrand && (
+                                <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg px-2.5 py-1.5 mb-1.5">
+                                    <span className="text-[11px] font-semibold text-blue-700">{selectedBrand}</span>
+                                    <button type="button" onClick={() => { setSelectedBrand(''); setSelectedModel(''); }} className="text-blue-400 hover:text-red-500 cursor-pointer ml-2">
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                                    </button>
+                                </div>
+                            )}
+
+                            {brandSearch ? (
+                                brandResults.length > 0 ? (
+                                    <div className="space-y-0.5">
+                                        {brandResults.map((b) => {
+                                            const isSelected = selectedBrand.toLowerCase() === b.name.toLowerCase();
+                                            return (
+                                                <button
+                                                    key={b.name}
+                                                    type="button"
+                                                    onClick={() => handleSelectBrand(b.name)}
+                                                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${isSelected ? 'bg-blue-600 text-white' : 'hover:bg-gray-100 text-gray-700'}`}
+                                                >
+                                                    <span>{b.name}</span>
+                                                    <span className={`text-[9px] px-1 py-0.5 rounded ${isSelected ? 'bg-blue-500 text-blue-100' : 'bg-gray-100 text-gray-400'}`}>{b.models.length}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <p className="text-[10px] text-gray-400 text-center py-2">No brands found</p>
+                                )
+                            ) : !selectedBrand ? (
+                                <p className="text-[10px] text-gray-400 text-center py-2">Type to search a brand</p>
+                            ) : null}
                         </div>
                     )}
                 </div>
 
-                {/* ═══ 3. PRICE RANGE (COLLAPSIBLE) ═══ */}
-                <div className="pt-4">
-                    <div
-                        onClick={() => toggleSection('price')}
-                        className="flex items-center justify-between cursor-pointer py-1 select-none group"
-                    >
-                        <div className="flex items-center gap-2">
-                            <span className="text-[13px] font-bold text-gray-900 group-hover:text-[#1877F2] transition-colors">
-                                Price Range (BDT)
-                            </span>
-                            {(minPrice !== null || maxPrice !== null) && (
-                                <span className="bg-[#1877F2]/10 text-[#1877F2] text-[10px] font-extrabold px-2 py-0.5 rounded-full">
-                                    Active
-                                </span>
-                            )}
-                        </div>
+                <div className="h-px bg-gray-100" />
 
-                        <div className="flex items-center gap-2">
-                            {(minPrice !== null || maxPrice !== null) && (
-                                <button
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setMinPrice(null);
-                                        setMaxPrice(null);
-                                        setCustomMin('');
-                                        setCustomMax('');
-                                    }}
-                                    className="text-[11px] text-gray-400 hover:text-red-500 font-semibold"
-                                >
-                                    Reset
-                                </button>
-                            )}
-                            <div className="w-5 h-5 rounded-md flex items-center justify-center text-gray-400 group-hover:text-gray-700 transition-colors">
-                                <svg
-                                    className={`w-3.5 h-3.5 transform transition-transform duration-200 ${
-                                        collapsed.price ? '-rotate-90 text-gray-400' : 'rotate-0 text-[#1877F2]'
-                                    }`}
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                {/* ── 2. MODEL ── */}
+                <div>
+                    <SectionHeader
+                        sectionKey="model"
+                        label="Model"
+                        value={selectedModel || (selectedBrand ? `${selectedBrand} models` : null)}
+                        onReset={selectedModel ? () => setSelectedModel('') : null}
+                    />
+                    {openSection === 'model' && (
+                        <div className="px-3 pb-2">
+                            <div className="relative mb-2">
+                                <svg className="w-3 h-3 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                 </svg>
+                                <input
+                                    type="text"
+                                    value={modelSearch}
+                                    onChange={(e) => setModelSearch(e.target.value)}
+                                    placeholder={selectedBrand ? `Search ${selectedBrand}...` : 'Type to search model...'}
+                                    className="w-full text-[11px] bg-gray-50 border border-gray-200 rounded-lg pl-7 pr-6 py-1.5 text-gray-700 placeholder-gray-400 focus:outline-none focus:border-blue-400 transition-all"
+                                />
+                                {modelSearch && (
+                                    <button type="button" onClick={() => setModelSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 cursor-pointer">
+                                        <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                                    </button>
+                                )}
                             </div>
-                        </div>
-                    </div>
 
-                    {collapsed.price && (minPrice !== null || maxPrice !== null) && (
-                        <div className="text-[11px] font-medium text-gray-500 mt-1 pl-0.5">
-                            {currentPriceSummary}
+                            {selectedModel && (
+                                <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg px-2.5 py-1.5 mb-1.5">
+                                    <span className="text-[11px] font-semibold text-blue-700">{selectedModel}</span>
+                                    <button type="button" onClick={() => setSelectedModel('')} className="text-blue-400 hover:text-red-500 cursor-pointer ml-2">
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                                    </button>
+                                </div>
+                            )}
+
+                            {modelResults.length > 0 ? (
+                                <div className="space-y-0.5">
+                                    {selectedBrand ? (
+                                        modelResults.map((m) => {
+                                            const isSel = selectedModel.toLowerCase() === m.toLowerCase();
+                                            return (
+                                                <button key={m} type="button" onClick={() => handleSelectModel(m)}
+                                                    className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${isSel ? 'bg-blue-600 text-white' : 'hover:bg-gray-100 text-gray-700'}`}
+                                                >{m}</button>
+                                            );
+                                        })
+                                    ) : (
+                                        modelResults.map((item, idx) => {
+                                            const isSel = selectedModel.toLowerCase() === item.model.toLowerCase();
+                                            return (
+                                                <button key={`${item.brand}-${item.model}-${idx}`} type="button" onClick={() => handleSelectModel(item.model, item.brand)}
+                                                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${isSel ? 'bg-blue-600 text-white' : 'hover:bg-gray-100 text-gray-700'}`}
+                                                >
+                                                    <span>{item.model}</span>
+                                                    <span className={`text-[9px] ${isSel ? 'text-blue-200' : 'text-gray-400'}`}>{item.brand}</span>
+                                                </button>
+                                            );
+                                        })
+                                    )}
+                                </div>
+                            ) : !selectedModel ? (
+                                <p className="text-[10px] text-gray-400 text-center py-2">
+                                    {selectedBrand ? `Showing ${selectedBrand} models above` : 'Type to search a model'}
+                                </p>
+                            ) : null}
                         </div>
                     )}
+                </div>
 
-                    {!collapsed.price && (
-                        <div className="mt-2.5 animate-fadeIn space-y-3">
-                            {/* Quick Presets */}
-                            <div className="space-y-1">
-                                {PRICE_RANGES.map((range) => {
-                                    const active = isCurrentPriceRange(range);
+                <div className="h-px bg-gray-100" />
+
+                {/* ── 3. PRICE ── */}
+                <div>
+                    <SectionHeader
+                        sectionKey="price"
+                        label="Price Range (BDT)"
+                        value={currentPriceSummary}
+                        onReset={() => { setMinPrice(null); setMaxPrice(null); setCustomMin(''); setCustomMax(''); }}
+                    />
+                    {openSection === 'price' && (
+                        <div className="px-3 pb-2 space-y-2">
+                            {/* Quick presets — compact 2-col */}
+                            <div className="grid grid-cols-2 gap-1">
+                                {PRICE_RANGES.map((r) => {
+                                    const active = minPrice === r.min && maxPrice === r.max;
                                     return (
-                                        <button
-                                            key={range.label}
-                                            type="button"
-                                            onClick={() => handleSelectPriceRange(range)}
-                                            className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium flex items-center justify-between transition-all cursor-pointer ${
-                                                active
-                                                    ? 'bg-[#1877F2] text-white font-bold shadow-sm'
-                                                    : 'text-gray-700 hover:bg-gray-100'
-                                            }`}
+                                        <button key={r.label} type="button"
+                                            onClick={() => { setMinPrice(r.min); setMaxPrice(r.max); setCustomMin(r.min ? String(r.min) : ''); setCustomMax(r.max ? String(r.max) : ''); }}
+                                            className={`px-1.5 py-1.5 rounded-lg text-[10px] font-semibold border text-center cursor-pointer transition-all leading-tight ${active ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-600'}`}
                                         >
-                                            <span>{range.label}</span>
-                                            {active && <span className="text-[10px]">✓</span>}
+                                            {r.label}
                                         </button>
                                     );
                                 })}
                             </div>
-
-                            {/* Custom Min / Max Inputs */}
-                            <form onSubmit={handleApplyCustomPrice} className="bg-gray-50 p-2.5 rounded-xl border border-gray-200/80">
-                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-                                    Custom Range (Tk)
-                                </span>
-                                <div className="grid grid-cols-2 gap-1.5 mb-2">
-                                    <input
-                                        type="number"
-                                        value={customMin}
-                                        onChange={(e) => setCustomMin(e.target.value)}
-                                        placeholder="Min Tk"
-                                        className="w-full text-xs bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-gray-800 focus:outline-none focus:border-[#1877F2]"
-                                    />
-                                    <input
-                                        type="number"
-                                        value={customMax}
-                                        onChange={(e) => setCustomMax(e.target.value)}
-                                        placeholder="Max Tk"
-                                        className="w-full text-xs bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-gray-800 focus:outline-none focus:border-[#1877F2]"
-                                    />
+                            {/* Custom */}
+                            <form onSubmit={handleApplyCustomPrice} className="bg-gray-50 rounded-lg border border-gray-200 p-2 space-y-1.5">
+                                <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Custom (৳)</div>
+                                <div className="grid grid-cols-2 gap-1.5">
+                                    <input type="number" value={customMin} onChange={(e) => setCustomMin(e.target.value)} placeholder="Min"
+                                        className="w-full text-[11px] bg-white border border-gray-200 rounded-md px-2 py-1.5 text-gray-700 placeholder-gray-400 focus:outline-none focus:border-blue-400" />
+                                    <input type="number" value={customMax} onChange={(e) => setCustomMax(e.target.value)} placeholder="Max"
+                                        className="w-full text-[11px] bg-white border border-gray-200 rounded-md px-2 py-1.5 text-gray-700 placeholder-gray-400 focus:outline-none focus:border-blue-400" />
                                 </div>
-                                <button
-                                    type="submit"
-                                    className="w-full py-1.5 bg-[#1877F2] hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
-                                >
-                                    Apply Price
-                                </button>
+                                <button type="submit" className="w-full py-1.5 bg-gray-800 hover:bg-blue-600 text-white text-[10px] font-semibold rounded-md transition-colors cursor-pointer">Apply</button>
                             </form>
                         </div>
                     )}
                 </div>
 
-                {/* ═══ 4. CONDITION (COLLAPSIBLE) ═══ */}
-                <div className="pt-4">
-                    <div
-                        onClick={() => toggleSection('condition')}
-                        className="flex items-center justify-between cursor-pointer py-1 select-none group"
-                    >
-                        <div className="flex items-center gap-2">
-                            <span className="text-[13px] font-bold text-gray-900 group-hover:text-[#1877F2] transition-colors">
-                                Condition
-                            </span>
-                            {selectedCondition && selectedCondition !== 'all' && (
-                                <span className="bg-[#1877F2]/10 text-[#1877F2] text-[10px] font-extrabold px-2 py-0.5 rounded-full">
-                                    {currentConditionObj?.label || selectedCondition}
-                                </span>
-                            )}
-                        </div>
+                <div className="h-px bg-gray-100" />
 
-                        <div className="flex items-center gap-2">
-                            {selectedCondition && selectedCondition !== 'all' && (
-                                <button
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedCondition('all');
-                                    }}
-                                    className="text-[11px] text-gray-400 hover:text-red-500 font-semibold"
-                                >
-                                    Reset
-                                </button>
-                            )}
-                            <div className="w-5 h-5 rounded-md flex items-center justify-center text-gray-400 group-hover:text-gray-700 transition-colors">
-                                <svg
-                                    className={`w-3.5 h-3.5 transform transition-transform duration-200 ${
-                                        collapsed.condition ? '-rotate-90 text-gray-400' : 'rotate-0 text-[#1877F2]'
-                                    }`}
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    {!collapsed.condition && (
-                        <div className="mt-2.5 animate-fadeIn space-y-1.5">
+                {/* ── 4. CONDITION ── */}
+                <div>
+                    <SectionHeader
+                        sectionKey="condition"
+                        label="Condition"
+                        value={selectedCondition && selectedCondition !== 'all' ? currentConditionObj?.label : null}
+                        onReset={() => setSelectedCondition('all')}
+                    />
+                    {openSection === 'condition' && (
+                        <div className="px-3 pb-2 space-y-1">
                             {CAR_CONDITIONS.map((c) => {
-                                const isSelected = (selectedCondition || 'all') === c.id;
+                                const isSel = (selectedCondition || 'all') === c.id;
                                 return (
-                                    <button
-                                        key={c.id}
-                                        type="button"
-                                        onClick={() => setSelectedCondition(c.id)}
-                                        className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-center justify-between cursor-pointer border ${
-                                            isSelected
-                                                ? 'bg-blue-50/70 border-[#1877F2] text-[#1877F2] font-bold'
-                                                : 'bg-white border-gray-200/80 text-gray-700 hover:border-gray-300'
-                                        }`}
+                                    <button key={c.id} type="button" onClick={() => setSelectedCondition(c.id)}
+                                        className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium border cursor-pointer transition-all ${isSel ? 'bg-blue-50 border-blue-300 text-blue-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
                                     >
-                                        <div className="flex items-center gap-2">
-                                            <div
-                                                className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
-                                                    isSelected ? 'border-[#1877F2] bg-[#1877F2]' : 'border-gray-300 bg-white'
-                                                }`}
-                                            >
-                                                {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
-                                            </div>
-                                            <span>{c.label}</span>
+                                        <div className={`w-3 h-3 rounded-full border-2 flex items-center justify-center shrink-0 ${isSel ? 'border-blue-600 bg-blue-600' : 'border-gray-300'}`}>
+                                            {isSel && <div className="w-1 h-1 rounded-full bg-white" />}
                                         </div>
-                                        <span className="text-[10px] text-gray-400">
-                                            {c.id === 'all' ? 'All' : c.id === 'new' ? '0km' : ''}
-                                        </span>
+                                        <span className="flex-1 text-left">{c.label}</span>
+                                        {c.id === 'new' && <span className="text-[8px] font-bold bg-green-100 text-green-700 px-1 py-0.5 rounded">0km</span>}
                                     </button>
                                 );
                             })}
@@ -739,84 +409,42 @@ export default function CarSidebarFilter({
                     )}
                 </div>
 
-                {/* ═══ 5. BODY TYPE (COLLAPSIBLE) ═══ */}
-                <div className="pt-4">
-                    <div
-                        onClick={() => toggleSection('bodyType')}
-                        className="flex items-center justify-between cursor-pointer py-1 select-none group"
-                    >
-                        <div className="flex items-center gap-2">
-                            <span className="text-[13px] font-bold text-gray-900 group-hover:text-[#1877F2] transition-colors">
-                                Body Type
-                            </span>
-                            {selectedBodyType && (
-                                <span className="bg-[#1877F2]/10 text-[#1877F2] text-[10px] font-extrabold px-2 py-0.5 rounded-full">
-                                    {selectedBodyType}
-                                </span>
-                            )}
-                        </div>
+                <div className="h-px bg-gray-100" />
 
-                        <div className="flex items-center gap-2">
-                            {selectedBodyType && (
-                                <button
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedBodyType('');
-                                    }}
-                                    className="text-[11px] text-gray-400 hover:text-red-500 font-semibold"
-                                >
-                                    Reset
-                                </button>
-                            )}
-                            <div className="w-5 h-5 rounded-md flex items-center justify-center text-gray-400 group-hover:text-gray-700 transition-colors">
-                                <svg
-                                    className={`w-3.5 h-3.5 transform transition-transform duration-200 ${
-                                        collapsed.bodyType ? '-rotate-90 text-gray-400' : 'rotate-0 text-[#1877F2]'
-                                    }`}
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
-                                </svg>
+                {/* ── 5. BODY TYPE ── */}
+                <div>
+                    <SectionHeader
+                        sectionKey="bodyType"
+                        label="Body Type"
+                        value={selectedBodyType || null}
+                        onReset={() => setSelectedBodyType('')}
+                    />
+                    {openSection === 'bodyType' && (
+                        <div className="px-3 pb-2">
+                            <div className="flex flex-wrap gap-1.5">
+                                {BODY_TYPES.map((t) => {
+                                    const isSel = selectedBodyType === t.id;
+                                    return (
+                                        <button key={t.id} type="button"
+                                            onClick={() => setSelectedBodyType(isSel ? '' : t.id)}
+                                            className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border cursor-pointer transition-all ${isSel ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-600'}`}
+                                        >
+                                            {t.label}
+                                        </button>
+                                    );
+                                })}
                             </div>
-                        </div>
-                    </div>
-
-                    {!collapsed.bodyType && (
-                        <div className="mt-2.5 animate-fadeIn flex flex-wrap gap-1.5">
-                            {BODY_TYPES.map((type) => {
-                                const isSelected = (selectedBodyType || '') === type.id;
-                                return (
-                                    <button
-                                        key={type.label}
-                                        type="button"
-                                        onClick={() => setSelectedBodyType(isSelected ? '' : type.id)}
-                                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
-                                            isSelected
-                                                ? 'bg-[#1877F2] text-white border-[#1877F2] shadow-sm'
-                                                : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
-                                        }`}
-                                    >
-                                        {type.label}
-                                    </button>
-                                );
-                            })}
                         </div>
                     )}
                 </div>
 
             </div>
 
-            {/* ═══ MOBILE DRAWER FOOTER ═══ */}
+            {/* ── MOBILE FOOTER ── */}
             {onCloseMobile && (
-                <div className="p-4 border-t border-gray-100 bg-slate-50 lg:hidden shrink-0">
-                    <button
-                        type="button"
-                        onClick={onCloseMobile}
-                        className="w-full py-2.5 bg-[#1877F2] hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer"
-                    >
+                <div className="p-3 border-t border-gray-100 shrink-0 lg:hidden">
+                    <button type="button" onClick={onCloseMobile}
+                        className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[12px] font-semibold transition-colors cursor-pointer">
                         View {filteredCount} {filteredCount === 1 ? 'Car' : 'Cars'}
                     </button>
                 </div>
