@@ -11,13 +11,13 @@ export default function Footer({ user: propUser }) {
                 <div className="flex flex-col sm:flex-row flex-wrap justify-between items-start gap-10 lg:gap-8 mb-16">
                     {/* Column 1: Brand & Contact Info */}
                     <div className="space-y-6 max-w-xs min-w-[220px]">
-                        <Link href="/" className="inline-flex items-center gap-2.5 group">
-                            <svg className="w-6 h-6 text-white shrink-0 group-hover:text-blue-400 transition-colors" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 2C6.48 2 2 6.48 2 12c0 4.18 2.57 7.77 6.23 9.26l1.13-2.83C6.94 17.3 5.5 14.86 5.5 12c0-3.59 2.91-6.5 6.5-6.5 2.86 0 5.3 1.56 6.43 3.86l2.83-1.13C19.77 4.57 16.18 2 12 2z" fill="currentColor" />
-                                <path d="M12 22c5.52 0 10-4.48 10-10 0-1.85-.5-3.58-1.38-5.07l-2.73 1.36c.69 1.14 1.11 2.47 1.11 3.71 0 3.59-2.91 6.5-6.5 6.5-1.24 0-2.57-.42-3.71-1.11l-1.36 2.73C9.42 21.5 11.15 22 12 22z" fill="currentColor" />
-                                <polygon points="9.5,8 16.5,12 9.5,16" fill="currentColor" />
-                            </svg>
-                            <span className="text-white font-bold text-[17px] tracking-wider uppercase group-hover:text-blue-400 transition-colors">CarBazar</span>
+                        <Link href="/" className="inline-flex items-center gap-2 group">
+                            <div className="w-8 h-8 bg-[#1877F2] rounded-lg flex items-center justify-center shrink-0">
+                                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z" />
+                                </svg>
+                            </div>
+                            <span className="text-white font-black text-[18px] tracking-tight group-hover:text-blue-400 transition-colors">CarBazar</span>
                         </Link>
 
                         <div className="space-y-4 text-[13px] text-slate-300/90 font-normal">
@@ -81,7 +81,7 @@ export default function Footer({ user: propUser }) {
                         <h4 className="text-white font-medium text-[15px] mb-4">About CarBazar</h4>
                         <ul className="space-y-2.5 text-[13px] text-slate-300/90 font-normal">
                             <li><Link href="/why-choose-us" className="hover:text-white transition-colors">Why choose us</Link></li>
-                            <li><Link href="/how-it-works" className="hover:text-white transition-colors">Our Story</Link></li>
+                            <li><Link href="/how-it-works" className="hover:text-white transition-colors">How it works</Link></li>
                             <li><a href="#" className="hover:text-white transition-colors">Press Center</a></li>
                             <li><a href="#" className="hover:text-white transition-colors">Advertise</a></li>
                         </ul>

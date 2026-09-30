@@ -244,14 +244,14 @@ export default function CarDetails({ auth, slug, car: dbCar, recommendedCars = [
 
                         {/* Nav Links */}
                         <nav className="hidden lg:flex items-center gap-8 text-[14px] font-semibold text-gray-700">
-                            <Link href="/" className="hover:text-[#1877F2] transition-colors">Buy</Link>
+                            <Link href="/" className="hover:text-[#1877F2] transition-colors">Home</Link>
+                            <Link href="/cars" className="hover:text-[#1877F2] transition-colors">All Cars</Link>
                             <Link
                                 href={auth?.user ? `${route('dashboard')}?action=sell` : `${route('login')}?role=seller`}
                                 className="hover:text-[#1877F2] transition-colors"
                             >
                                 Sell
                             </Link>
-                            <Link href="/#impressive-collection-section" className="hover:text-[#1877F2] transition-colors">Hot Deals</Link>
                             <Link href="/how-it-works" className="hover:text-[#1877F2] transition-colors">How it works</Link>
                             <Link href="/why-choose-us" className="hover:text-[#1877F2] transition-colors">Why choose us</Link>
                         </nav>

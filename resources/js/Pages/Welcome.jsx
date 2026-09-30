@@ -572,25 +572,25 @@ export default function Welcome({ auth, collectionCars: dbCollectionCars, popula
                     <nav className="relative z-40 w-full">
                         <div className="w-full px-6 sm:px-8 lg:px-16 flex items-center justify-between h-[70px]">
                             {/* Logo */}
-                            <div className="flex items-center gap-2">
+                            <Link href="/" className="flex items-center gap-2">
                                 <div className="w-8 h-8 bg-[#1877F2] rounded-lg flex items-center justify-center">
                                     <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z" />
                                     </svg>
                                 </div>
-                                <span className="text-[#1877F2] font-black text-[18px] tracking-tight">CarBazar</span>
-                            </div>
+                                <span className="text-[#1877F2] font-black text-[20px] tracking-tight">CarBazar</span>
+                            </Link>
 
                             {/* Nav Links */}
                             <div className="hidden lg:flex items-center gap-9 text-[14px] font-semibold text-gray-800">
-                                <Link href="/cars" className="hover:text-[#1877F2] transition-colors">Buy</Link>
+                                <Link href="/" className="text-[#1877F2] font-bold">Home</Link>
+                                <Link href="/cars" className="hover:text-[#1877F2] transition-colors">All Cars</Link>
                                 <Link
                                     href={auth?.user ? `${route('dashboard')}?action=sell` : `${route('login')}?role=seller`}
                                     className="hover:text-[#1877F2] transition-colors"
                                 >
                                     Sell
                                 </Link>
-                                <Link href="/cars" className="hover:text-[#1877F2] transition-colors">Hot Deals</Link>
                                 <Link href="/how-it-works" className="hover:text-[#1877F2] transition-colors">How it works</Link>
                                 <Link href="/why-choose-us" className="hover:text-[#1877F2] transition-colors">Why choose us</Link>
                             </div>
